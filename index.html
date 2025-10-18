@@ -90,6 +90,8 @@
     .icon-btn {  
       background: transparent; border: none; padding: 8px;  
       border-radius: 8px; cursor: pointer; color: var(--text);
+      /* --- TAMBAHAN: Atur ukuran font ikon agar konsisten --- */
+      font-size: 18px; line-height: 1;
     }
     .icon-btn:hover { background: var(--hover-bg); }
     .grid { display: grid; grid-template-columns: 260px 1fr; gap: 18px; margin-top: 18px }
@@ -112,11 +114,13 @@
     .thread:hover { background: var(--hover-bg); }
     .meta { font-size: 12px; color: var(--muted) }
     .dot { width: 10px; height: 10px; border-radius: 50%; background: var(--border) }
-    textarea, input[type="text"], input[type="password"], select {
+    textarea, input[type="text"], input[type="password"], select, input[type="file"] {
       width: 100%; padding: 10px; border-radius: 10px;  
       border: 1px solid var(--border); resize: vertical;
       background: var(--card); color: var(--text);
       transition: border-color 0.3s, background 0.3s;
+      /* --- TAMBAHAN: Pastikan box-sizing konsisten --- */
+      box-sizing: border-box;
     }
     input[type="text"], input[type="password"] { padding: 8px; border-radius: 8px; }
     .thread-title { font-size: 18px; margin: 0 }
@@ -135,6 +139,14 @@
       width: 36px; height: 36px; border-radius: 10px;  
       background: var(--border); display: flex; align-items: center;  
       justify-content: center; color: var(--muted); font-weight: 700;
+      /* --- TAMBAHAN: Cegah teks avatar diseleksi --- */
+      user-select: none;
+    }
+    /* --- TAMBAHAN: Style untuk Avatar berupa Gambar --- */
+    .avatar-img {
+      width: 36px; height: 36px; border-radius: 10px;
+      object-fit: cover; /* Memastikan gambar mengisi area tanpa distorsi */
+      background: var(--border);
     }
     .notif-badge {  
       background: #ef4444; color: white; border-radius: 10px;  
@@ -145,8 +157,21 @@
       background: rgba(2, 6, 23, 0.45);  
       display: flex; align-items: center; justify-content: center;  
       padding: 16px; z-index: 999;
+      /* --- TAMBAHAN: Animasi fade-in --- */
+      animation: fadeIn 0.2s ease-out;
+    }
+    /* --- TAMBAHAN: Style untuk nested modal (profil di atas thread) --- */
+    .modal-backdrop.nested {
+        z-index: 1000;
+        background: rgba(2, 6, 23, 0.2); /* Lebih transparan */
+    }
+    @keyframes fadeIn {
+        from { opacity: 0; }
+        to { opacity: 1; }
     }
     html.dark-mode .modal-backdrop { background: rgba(0, 0, 0, 0.8); }
+    html.dark-mode .modal-backdrop.nested { background: rgba(0, 0, 0, 0.5); }
+    
     .thread-media img, .thread-media video {
         max-width: 100%;
         height: auto;
@@ -179,6 +204,7 @@
         </div>
       </div>
       <div class="controls">
+        <button class="icon-btn" id="my-profile-btn" title="Profil Saya">👤</button>
         <button class="icon-btn" id="theme-toggle" title="Ganti Tema">
           <span id="theme-icon">☀️</span>
         </button>
@@ -202,6 +228,7 @@
           <div style="display: flex; gap: 10px; align-items: flex-start">
             <div style="flex: 1">
               <input type="text" id="composer-name" placeholder="Nama Anda..." />
+              <button class="btn secondary small" id="edit-profile-btn" style="margin-top: 4px; display: none;">Edit Profil</button>
               <div style="height: 8px"></div>
               
               <input type="text" id="thread-title" placeholder="Judul thread..." />
@@ -238,15 +265,23 @@
     
     // --- INI ADALAH BARIS YANG DIUBAH ---
     const DEFAULT_CATS = [
-      'Teknologi', 'Hiburan', 'Umum', 
-      'Matematika', 'Biologi', 'Ekonomi', 'Fisika', 
+      'Teknologi', 'Hiburan', 'Umum',  
+      'Matematika', 'Biologi', 'Ekonomi', 'Fisika',  
       'Bahasa Inggris', 'Kimia', 'PP', 'Sejarah'
     ];
     // ------------------------------------
 
     function loadData() {
       const raw = localStorage.getItem('obrolin_data');
-      if (raw) return JSON.parse(raw);
+      if (raw) {
+        const parsedData = JSON.parse(raw);
+        // --- MODIFIKASI: Pastikan data.users ada dan berupa array ---
+        if (!parsedData.users || !Array.isArray(parsedData.users)) {
+            parsedData.users = [];
+        }
+        return parsedData;
+      }
+      // Pastikan users ada di data default
       const data = { users: [], threads: [], notifications: [] };
       return data;
     }
@@ -254,6 +289,8 @@
 
     let data = loadData();
     const modalRoot = document.getElementById('modal-root');
+    // --- TAMBAHAN: Lacak ID thread yang sedang dibuka ---
+    let currentOpenThreadId = null;
 
     // ===== UI helpers =====
     function el(html) { const div = document.createElement('div'); div.innerHTML = html.trim(); return div.firstChild; }
@@ -261,7 +298,7 @@
     // ===== Theme Toggler Logic (UPDATED) =====
     const themeToggleBtn = document.getElementById('theme-toggle');
     const themeIcon = document.getElementById('theme-icon');
-    let isDarkMode = htmlEl.classList.contains('dark-mode'); 
+    let isDarkMode = htmlEl.classList.contains('dark-mode');  
 
     function applyTheme() {
       if (isDarkMode) {
@@ -282,11 +319,205 @@
       applyTheme();
     };
 
-    // ===== Modal helpers =====
-    function showModal(inner) {
-      modalRoot.innerHTML = `<div class="modal-backdrop">${inner}</div>`;
+    // ===== Modal helpers (MODIFIKASI) =====
+    function showModal(inner, isNested = false) {
+      // --- MODIFIKASI: Buat backdrop baru, jangan hapus yg lama jika nested ---
+      const backdrop = el(`<div class="modal-backdrop ${isNested ? 'nested' : ''}">${inner}</div>`);
+      
+      if (isNested) {
+          // Jika modal bersarang (misal: profil di atas thread)
+          modalRoot.appendChild(backdrop);
+          // Izinkan tutup modal nested dgn klik backdrop-nya
+          backdrop.onclick = (e) => {
+              if (e.target === backdrop) backdrop.remove();
+          };
+          // Cegah klik di card menutup modal
+          backdrop.querySelector('.card').onclick = (e) => e.stopPropagation();
+      } else {
+          // Modal normal, hapus semua yg lama
+          modalRoot.innerHTML = '';
+          modalRoot.appendChild(backdrop);
+      }
     }
-    function closeModal() { modalRoot.innerHTML = ''; }
+    function closeModal() { 
+        // --- MODIFIKASI: Hanya hapus modal paling atas jika ada > 1 ---
+        if (modalRoot.children.length > 1) {
+            modalRoot.removeChild(modalRoot.lastChild);
+        } else {
+            modalRoot.innerHTML = '';
+        }
+    }
+    // --- TAMBAHAN: Fungsi untuk menutup semua modal ---
+    function closeAllModals() {
+        modalRoot.innerHTML = '';
+        currentOpenThreadId = null; // Reset ID thread
+    }
+
+    // --- TAMBAHAN: Helper Profil Pengguna ---
+    /**
+     * Mencari atau membuat profil pengguna berdasarkan nama.
+     * @param {string} name - Nama pengguna.
+     * @returns {object} Objek profil pengguna ({ name, bio, pfp }).
+     */
+    function getOrCreateUserProfile(name) {
+        if (!name) return { name: 'Anonim', bio: '', pfp: '' }; // Fallback
+        
+        let user = data.users.find(u => u.name.toLowerCase() === name.toLowerCase());
+        if (user) {
+            return user;
+        }
+        // Jika tidak ada, buat baru
+        user = {
+            name: name,
+            bio: '', // Bio default
+            pfp: ''  // pfp = profile picture (sebagai Data URL atau URL)
+        };
+        data.users.push(user);
+        saveData(data); // Simpan user baru ke localStorage
+        return user;
+    }
+
+    /**
+     * Membuat HTML untuk avatar (foto profil atau inisial).
+     * @param {object} user - Objek profil pengguna.
+     * @param {number} size - Ukuran avatar dalam piksel.
+     * @returns {string} String HTML untuk elemen avatar.
+     */
+    function renderAvatar(user, size = 36) {
+        const style = `width:${size}px; height:${size}px; font-size:${size * 0.5}px;`;
+        if (user && user.pfp) {
+            // Jika punya pfp (URL atau Data URL)
+            return `<img src="${user.pfp}" alt="${escapeHtml(user.name)}" class="avatar-img" style="${style}">`;
+        }
+        // Fallback ke inisial
+        const initial = user ? escapeHtml(user.name[0] || '?').toUpperCase() : '?';
+        return `<div class="avatar" style="${style}">${initial}</div>`;
+    }
+
+    /**
+     * Membuka modal untuk melihat profil pengguna.
+     * @param {string} name - Nama pengguna yang akan dilihat.
+     */
+    function openProfileViewer(name) {
+        const user = getOrCreateUserProfile(name);
+        
+        const modalHtml = `
+        <div class="card" style="max-width:500px; padding:20px; text-align:center;">
+            ${renderAvatar(user, 120)} <h2 style="margin-top: 10px; margin-bottom: 5px;">${escapeHtml(user.name)}</h2>
+            
+            <div style="color: var(--muted); white-space: pre-wrap; min-height: 40px; margin-bottom: 20px;">
+                ${user.bio ? escapeHtml(user.bio) : '<i>Pengguna ini belum menulis bio.</i>'}
+            </div>
+            
+            <button class="btn secondary" id="close-profile-viewer">Tutup</button>
+        </div>
+        `;
+        // Tampilkan sebagai modal bersarang (nested)
+        showModal(modalHtml, true); 
+        
+        // Tombol tutup hanya menutup modal ini
+        document.getElementById('close-profile-viewer').onclick = closeModal;
+    }
+
+    /**
+     * Membuka modal untuk mengedit profil pengguna.
+     * @param {string} name - Nama pengguna yang akan diedit.
+     */
+    function openProfileEditor(name) {
+        const user = getOrCreateUserProfile(name);
+        let pfpData = user.pfp; // Simpan PFP baru di sini (bisa URL atau Data URL)
+
+        const modalHtml = `
+        <div class="card" style="max-width:500px; padding:20px;">
+            <h2>Edit Profil: ${escapeHtml(name)}</h2>
+            
+            <div style="text-align:center; margin-bottom: 12px;">
+                <div id="pfp-preview-container">
+                    ${renderAvatar(user, 100)}
+                </div>
+            </div>
+            
+            <label for="pfp-url">Foto Profil (Tempel URL):</label>
+            <input type="text" id="pfp-url" placeholder="https_//...gambar.png" value="${user.pfp.startsWith('http') ? user.pfp : ''}" style="margin-top: 4px;">
+            
+            <p style="text-align:center; margin: 4px 0; color: var(--muted); font-size: 13px;">...atau upload file (max 2MB):</p>
+            <input type="file" id="pfp-upload" accept="image/png, image/jpeg, image/gif, image/webp" style="padding: 5px;">
+            
+            <div style="height:12px"></div>
+            
+            <label for="bio-input">Bio:</label>
+            <textarea id="bio-input" placeholder="Ceritakan sedikit tentang diri Anda..." style="min-height: 80px; margin-top: 4px;">${escapeHtml(user.bio)}</textarea>
+            
+            <div style="display:flex; justify-content:space-between; gap: 8px; margin-top: 16px; align-items:center;">
+                <button class="btn secondary small" id="remove-pfp" style="background: #ef4444; color: white; border: none; ${!user.pfp ? 'display:none' : ''}">Hapus Foto</button>
+                <div style="display:flex; gap: 8px;">
+                    <button class="btn secondary" id="cancel-profile">Batal</button>
+                    <button class="btn" id="save-profile">Simpan</button>
+                </div>
+            </div>
+        </div>
+        `;
+        // Tampilkan sebagai modal normal (menutup yg lain)
+        closeAllModals(); // Tutup modal lain jika ada
+        showModal(modalHtml, false);
+
+        const pfpUpload = document.getElementById('pfp-upload');
+        const pfpUrlInput = document.getElementById('pfp-url');
+        const pfpPreviewContainer = document.getElementById('pfp-preview-container');
+        const removePfpBtn = document.getElementById('remove-pfp');
+
+        const updatePreview = () => {
+            const tempUser = { name: name, pfp: pfpData };
+            pfpPreviewContainer.innerHTML = renderAvatar(tempUser, 100);
+            removePfpBtn.style.display = pfpData ? 'inline-block' : 'none';
+        };
+
+        // Handle File Upload (konversi ke Data URL Base64)
+        pfpUpload.onchange = (e) => {
+            const file = e.target.files[0];
+            if (file) {
+                if (file.size > 2 * 1024 * 1024) { // Batas 2MB
+                    alert('Ukuran file terlalu besar. Maksimal 2MB.');
+                    pfpUpload.value = '';
+                    return;
+                }
+                const reader = new FileReader();
+                reader.onload = (event) => {
+                    pfpData = event.target.result;
+                    pfpUrlInput.value = ''; // Kosongkan input URL
+                    updatePreview();
+                };
+                reader.readAsDataURL(file);
+            }
+        };
+
+        // Handle URL input
+        pfpUrlInput.oninput = () => {
+             pfpData = pfpUrlInput.value.trim();
+             pfpUpload.value = ''; // Kosongkan input file
+             updatePreview();
+        };
+
+        // Handle Hapus Foto
+        removePfpBtn.onclick = () => {
+            pfpData = '';
+            pfpUrlInput.value = '';
+            pfpUpload.value = '';
+            updatePreview();
+        };
+
+        // Handle Tombol Simpan
+        document.getElementById('save-profile').onclick = () => {
+            user.bio = document.getElementById('bio-input').value.trim();
+            user.pfp = pfpData;
+            saveData(data);
+            closeAllModals();
+            renderThreads(); // Render ulang thread untuk update avatar
+        };
+        
+        document.getElementById('cancel-profile').onclick = closeAllModals;
+    }
+    // ------------------------------------
 
     // ===== categories =====
     function renderCategories(active = 'Semua') {
@@ -299,16 +530,41 @@
       })
     }
 
-    // ===== composer =====
+    // ===== composer (MODIFIKASI) =====
     function renderComposer() {
       const sel = document.getElementById('thread-category'); sel.innerHTML = ''; DEFAULT_CATS.forEach(c => { const opt = document.createElement('option'); opt.value = c; opt.textContent = c; sel.appendChild(opt); });
       document.getElementById('post-thread').onclick = postThread;
-      document.getElementById('clear-thread').onclick = () => { 
-        document.getElementById('composer-name').value = ''; 
-        document.getElementById('thread-title').value = ''; 
-        document.getElementById('thread-body').value = ''; 
-        document.getElementById('thread-media-url').value = ''; 
+      document.getElementById('clear-thread').onclick = () => {  
+        // document.getElementById('composer-name').value = ''; // Jangan hapus nama
+        document.getElementById('thread-title').value = '';  
+        document.getElementById('thread-body').value = '';  
+        document.getElementById('thread-media-url').value = '';  
       }
+
+      // --- TAMBAHAN: Logika untuk tombol "Edit Profil" cepat ---
+      const composerNameInput = document.getElementById('composer-name');
+      const editProfileBtn = document.getElementById('edit-profile-btn');
+      
+      // Isi nama terakhir yang dipakai
+      composerNameInput.value = localStorage.getItem('obrolin_last_user') || '';
+      if (composerNameInput.value) {
+          editProfileBtn.style.display = 'inline-block';
+      }
+
+      composerNameInput.oninput = () => {
+          if (composerNameInput.value.trim()) {
+              editProfileBtn.style.display = 'inline-block';
+          } else {
+              editProfileBtn.style.display = 'none';
+          }
+      };
+
+      editProfileBtn.onclick = () => {
+          const name = composerNameInput.value.trim();
+          if (!name) return;
+          localStorage.setItem('obrolin_last_user', name); // Simpan nama
+          openProfileEditor(name);
+      };
     }
 
     function postThread() {
@@ -320,13 +576,17 @@
       
       if (!name || !title || !body) { alert('Nama, Judul, dan isi thread wajib diisi.'); return; }
       
+      // --- TAMBAHAN: Simpan nama terakhir & pastikan profil ada ---
+      localStorage.setItem('obrolin_last_user', name);
+      getOrCreateUserProfile(name); // Pastikan user ada di data
+      
       const thread = {  
         id: Date.now().toString(),  
         title,  
         body,  
         category,  
         mediaUrl: mediaUrl,  
-        authorName: name, 
+        authorName: name,  
         created: new Date().toISOString(),  
         votes: 0,  
         replies: []  
@@ -335,7 +595,7 @@
       data.threads.unshift(thread);  
       saveData(data);  
       renderThreads();  
-      document.getElementById('composer-name').value = '';  
+      // document.getElementById('composer-name').value = ''; // Jangan hapus nama
       document.getElementById('thread-title').value = '';  
       document.getElementById('thread-body').value = '';
       document.getElementById('thread-media-url').value = '';  
@@ -359,7 +619,7 @@
         return '';
     }
 
-    // ===== threads list & view (simplified rendering) =====
+    // ===== threads list & view (MODIFIKASI) =====
     function renderThreads(filter = 'Semua') {
       const list = document.getElementById('threads-list'); list.innerHTML = '';
       const threads = data.threads.filter(t => filter === 'Semua' || t.category === filter);
@@ -368,20 +628,30 @@
       threads.forEach(t => {
         const mediaPreview = createMediaElement(t.mediaUrl);  
         
+        // --- TAMBAHAN: Ambil profil dan render avatar ---
+        const user = getOrCreateUserProfile(t.authorName);
+        const avatarHtml = renderAvatar(user, 36);
+        
         const item = el(`
           <div class="card thread" style="padding:15px">
-            <div style="display:flex;gap:12px;align-items:center">
-              <div class="vote">
-                <button class="up" data-id="${t.id}">▲</button>
-                <div class="votes-count">${t.votes}</div>
-                <button class="down" data-id="${t.id}">▼</button>
-              </div>
+            <div style="display:flex; flex-direction: column; gap:12px; align-items:center; width: 40px;">
+                <div class="avatar-wrapper" data-name="${escapeHtml(t.authorName)}" style="cursor:pointer;" title="Lihat profil ${escapeHtml(t.authorName)}">
+                    ${avatarHtml}
+                </div>
+                <div class="vote">
+                    <button class="up" data-id="${t.id}">▲</button>
+                    <div class="votes-count">${t.votes}</div>
+                    <button class="down" data-id="${t.id}">▼</button>
+                </div>
             </div>
             <div style="flex:1">
               <div style="display:flex;justify-content:space-between;align-items:start">
                 <div>
                   <div style="font-weight:700">${escapeHtml(t.title)}</div>
-                  <div class="meta">oleh ${escapeHtml(t.authorName)} • ${new Date(t.created).toLocaleString()}</div>
+                  <div class="meta">oleh 
+                    <strong class="author-name" data-name="${escapeHtml(t.authorName)}" style="cursor:pointer; color: var(--text);" title="Lihat profil ${escapeHtml(t.authorName)}">${escapeHtml(t.authorName)}</strong> 
+                    • ${new Date(t.created).toLocaleString()}
+                  </div>
                 </div>
                 <div class="meta">${escapeHtml(t.category)}</div>
               </div>
@@ -398,6 +668,10 @@
         `);
         list.appendChild(item);
         
+        // --- TAMBAHAN: Event listener untuk lihat profil ---
+        item.querySelector('.avatar-wrapper').onclick = () => openProfileViewer(t.authorName);
+        item.querySelector('.author-name').onclick = () => openProfileViewer(t.authorName);
+
         item.querySelector('[data-action=open]').onclick = () => openThread(t.id);
         item.querySelector('[data-action=share]').onclick = () => { navigator.clipboard?.writeText(window.location.href + '#t=' + t.id).then(() => alert('Link disalin ke clipboard')) }
         
@@ -408,14 +682,30 @@
 
     function openThread(id) {
       const t = data.threads.find(x => x.id === id); if (!t) return;
+      
+      // --- TAMBAHAN: Simpan ID thread yg dibuka ---
+      currentOpenThreadId = id;
+
       const mediaElementFull = createMediaElement(t.mediaUrl);  
       
-      let html = `<div class="card" style="max-width:820px; padding:20px;">
+      // --- TAMBAHAN: Ambil profil dan render avatar ---
+      const user = getOrCreateUserProfile(t.authorName);
+      const avatarHtml = renderAvatar(user, 40);
+      
+      let html = `<div class="card" style="max-width:820px; padding:20px; max-height: 90vh; overflow-y: auto;">
         <div style="display:flex;gap:12px;align-items:flex-start">
-          <div class="vote" style="padding:0;"><div style="font-size:24px; color:var(--accent);">${t.votes}</div><div class="meta">Votes</div></div>
+          <div style="display:flex; flex-direction:column; align-items:center; gap: 8px; width: 40px;">
+              <div class="avatar-wrapper" data-name="${escapeHtml(t.authorName)}" style="cursor:pointer;" title="Lihat profil ${escapeHtml(t.authorName)}">
+                  ${avatarHtml}
+              </div>
+              <div class="vote" style="padding:0;"><div style="font-size:24px; color:var(--accent);">${t.votes}</div><div class="meta">Votes</div></div>
+          </div>
           <div style="flex:1">
             <h2 class="thread-title">${escapeHtml(t.title)}</h2>
-            <div class="meta">oleh ${escapeHtml(t.authorName)} • ${new Date(t.created).toLocaleString()} • ${escapeHtml(t.category)}</div>
+            <div class="meta">oleh 
+                <strong class="author-name" data-name="${escapeHtml(t.authorName)}" style="cursor:pointer; color: var(--text);" title="Lihat profil ${escapeHtml(t.authorName)}">${escapeHtml(t.authorName)}</strong> 
+                • ${new Date(t.created).toLocaleString()} • ${escapeHtml(t.category)}
+            </div>
             <div style="height:12px"></div>
             <div style="white-space:pre-wrap; margin-bottom:15px;">${escapeHtml(t.body)}</div>
             
@@ -444,19 +734,34 @@
       </div>`;
       showModal(html);
 
+      // --- TAMBAHAN: Isi nama terakhir di form balasan ---
+      const replyNameInput = document.getElementById('reply-name');
+      replyNameInput.value = localStorage.getItem('obrolin_last_user') || '';
+
+      // --- TAMBAHAN: Listener untuk lihat profil di modal ---
+      document.querySelector('.modal-backdrop .avatar-wrapper').onclick = () => openProfileViewer(t.authorName);
+      document.querySelector('.modal-backdrop .author-name').onclick = () => openProfileViewer(t.authorName);
+
       renderReplies(t);
-      document.getElementById('close-thread').onclick = closeModal;
+      document.getElementById('close-thread').onclick = () => {
+          currentOpenThreadId = null; // Reset ID
+          closeAllModals();
+      }
       document.getElementById('post-reply').onclick = () => {
-        const name = document.getElementById('reply-name').value.trim();
-        const body = document.getElementById('reply-body').value.trim(); 
+        const name = replyNameInput.value.trim();
+        const body = document.getElementById('reply-body').value.trim();  
         if (!name || !body) { alert('Nama dan isi balasan wajib diisi.'); return; }
         
-        const reply = { id: Date.now().toString(), authorId: null, authorName: name, body, created: new Date().toISOString(), replies: [], votes: 0, parentId: null };
-        t.replies.push(reply); 
-        saveData(data); 
-        renderReplies(t); 
+        // --- TAMBAHAN: Simpan nama & pastikan profil ada ---
+        localStorage.setItem('obrolin_last_user', name);
+        getOrCreateUserProfile(name);
         
-        document.getElementById('reply-name').value = '';
+        const reply = { id: Date.now().toString(), authorId: null, authorName: name, body, created: new Date().toISOString(), replies: [], votes: 0, parentId: null };
+        t.replies.push(reply);  
+        saveData(data);  
+        renderReplies(t);  
+        
+        // document.getElementById('reply-name').value = ''; // Jangan hapus nama
         document.getElementById('reply-body').value = '';
       }
     }
@@ -465,31 +770,66 @@
       const root = document.getElementById('replies-root'); root.innerHTML = '';
       function renderList(list, container, depth) {
         list.forEach(r => {
+          // --- TAMBAHAN: Ambil profil dan render avatar ---
+          const user = getOrCreateUserProfile(r.authorName);
+          const avatarHtml = renderAvatar(user, 28); // Avatar kecil
+
           const rep = document.createElement('div'); rep.className = 'reply'; rep.style.marginLeft = (depth * 15) + 'px';
-          rep.innerHTML = `<div style="display:flex;justify-content:space-between"><div><strong>${escapeHtml(r.authorName)}</strong><div class="meta">${new Date(r.created).toLocaleString()}</div></div><div class="meta">Votes: <span class="votes-count-reply">${r.votes}</span></div></div><div style="margin-top:8px;white-space:pre-wrap">${escapeHtml(r.body)}</div><div style="margin-top:8px;display:flex;gap:8px"><button class="btn small" data-id="${r.id}" data-action="reply">Balas</button><button class="icon-btn" data-id="${r.id}" data-action="up">▲</button><button class="icon-btn" data-id="${r.id}" data-action="down">▼</button></div>`;
+          // --- MODIFIKASI: Tambahkan avatar di balasan ---
+          rep.innerHTML = `
+          <div style="display:flex; gap: 8px; align-items:flex-start;">
+              <div class="avatar-wrapper" data-name="${escapeHtml(r.authorName)}" style="cursor:pointer; margin-top: 2px;" title="Lihat profil ${escapeHtml(r.authorName)}">
+                  ${avatarHtml}
+              </div>
+              <div style="flex:1;">
+                  <div style="display:flex;justify-content:space-between">
+                      <div>
+                          <strong class="author-name" data-name="${escapeHtml(r.authorName)}" style="cursor:pointer; color: var(--text);" title="Lihat profil ${escapeHtml(r.authorName)}">${escapeHtml(r.authorName)}</strong>
+                          <div class="meta">${new Date(r.created).toLocaleString()}</div>
+                      </div>
+                      <div class="meta">Votes: <span class="votes-count-reply">${r.votes}</span></div>
+                  </div>
+                  <div style="margin-top:8px;white-space:pre-wrap">${escapeHtml(r.body)}</div>
+                  <div style="margin-top:8px;display:flex;gap:8px">
+                      <button class="btn small" data-id="${r.id}" data-action="reply">Balas</button>
+                      <button class="icon-btn" data-id="${r.id}" data-action="up" style="padding: 4px;">▲</button>
+                      <button class="icon-btn" data-id="${r.id}" data-action="down" style="padding: 4px;">▼</button>
+                  </div>
+              </div>
+          </div>`;
           container.appendChild(rep);
+
+          // --- TAMBAHAN: Listener untuk lihat profil di balasan ---
+          rep.querySelector('.avatar-wrapper').onclick = () => openProfileViewer(r.authorName);
+          rep.querySelector('.author-name').onclick = () => openProfileViewer(r.authorName);
 
           // Reply action handler
           rep.querySelector('[data-action=reply]').onclick = () => {
             const existingBox = rep.querySelector('.reply-box');
-            if (existingBox) { existingBox.remove(); return; } 
+            if (existingBox) { existingBox.remove(); return; }  
 
             const box = document.createElement('div'); box.className = 'reply-box'; box.style.marginTop = '8px';
+            // --- TAMBAHAN: Isi nama terakhir di form balasan-balasan ---
+            const currentName = localStorage.getItem('obrolin_last_user') || '';
             box.innerHTML = `
-              <input type="text" placeholder="Nama Anda..." style="width:100%; padding: 8px; border-radius: 8px; border: 1px solid var(--border); background: var(--card); color: var(--text); margin-bottom: 6px; box-sizing: border-box;" />
+              <input type="text" value="${escapeHtml(currentName)}" placeholder="Nama Anda..." style="width:100%; padding: 8px; border-radius: 8px; border: 1px solid var(--border); background: var(--card); color: var(--text); margin-bottom: 6px; box-sizing: border-box;" />
               <textarea placeholder="Balas..." style="width:100%;min-height:60px; padding:8px;"></textarea>
               <div style="display:flex;justify-content:flex-end;margin-top:6px"><button class="btn small">Kirim</button></div>`;
             rep.appendChild(box);
 
             box.querySelector('button').onclick = () => {
               const name = box.querySelector('input[type="text"]').value.trim();
-              const txt = box.querySelector('textarea').value.trim(); 
+              const txt = box.querySelector('textarea').value.trim();  
               if (!name || !txt) { alert('Nama dan balasan wajib diisi.'); return; }
               
+              // --- TAMBAHAN: Simpan nama & pastikan profil ada ---
+              localStorage.setItem('obrolin_last_user', name);
+              getOrCreateUserProfile(name);
+              
               const newR = { id: Date.now().toString(), authorId: null, authorName: name, body: txt, created: new Date().toISOString(), replies: [], votes: 0, parentId: r.id };
-              r.replies.push(newR); 
-              saveData(data); 
-              renderReplies(thread); 
+              r.replies.push(newR);  
+              saveData(data);  
+              renderReplies(thread);  
             }
           }
 
@@ -509,9 +849,25 @@
     function escapeHtml(s) { if (!s) return ''; return s.replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;').replaceAll('"', '&quot;').replaceAll("'", '&#039;'); }
     function truncate(s, n) { return s.length > n ? s.slice(0, n - 1) + '…' : s; }
 
-    // ===== bootstrap =====
+    // ===== bootstrap (MODIFIKASI) =====
     document.getElementById('new-thread-btn').onclick = () => { window.scrollTo({ top: 0, behavior: 'smooth' }); document.getElementById('thread-title').focus(); }
     
+    // --- TAMBAHAN: Event listener untuk tombol "Profil Saya" ---
+    document.getElementById('my-profile-btn').onclick = () => {
+        // Ambil nama dari user terakhir yg tersimpan
+        const name = localStorage.getItem('obrolin_last_user');
+        if (name) {
+            openProfileEditor(name);
+        } else {
+            // Jika belum ada, minta nama
+            const newName = prompt("Masukkan nama Anda untuk membuat profil:");
+            if (newName) {
+                localStorage.setItem('obrolin_last_user', newName);
+                openProfileEditor(newName);
+            }
+        }
+    };
+
     renderComposer();  
     renderCategories();  
     renderThreads();  
