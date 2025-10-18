@@ -1,0 +1,570 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Forum Pembahasan Orang BarBar — Diskusi Terbuka</title>
+  
+  <script>
+    (function() {
+      // Baca tema dari local storage
+      const savedTheme = localStorage.getItem('obrolin_theme');
+      // Jika tema tersimpan adalah 'dark', langsung tambahkan class
+      if (savedTheme === 'dark') {
+        document.documentElement.classList.add('dark-mode');
+      }
+    })();
+  </script>
+
+  <style>
+    /* --- Reset & Variables --- */
+    /* (CSS Tetap sama, tidak perlu diubah) */
+    :root {
+      --bg: #ffffff;
+      --card: #f9fafb;  
+      --text: #0f1724;
+      --muted: #6b7280;
+      --border: #e5e7eb;  
+      --hover-bg: rgba(243, 244, 246, 0.9);
+      --reply-bg: #f3f4f6;  
+      --reply-border: #d1d5db;  
+      --accent: #2563eb;
+      --success: #10b981;
+      --radius: 12px;
+      --shadow: 0 4px 12px rgba(16, 24, 40, 0.08);  
+      
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    }
+    html.dark-mode {
+      --bg: #121212;  
+      --card: #1f2937;
+      --text: #f3f4f6;
+      --muted: #9ca3af;
+      --border: #374151;  
+      --hover-bg: rgba(243, 244, 246, 0.08);  
+      --reply-bg: #374151;
+      --reply-border: #4b5563;
+      --accent: #60a5fa;  
+      --shadow: 0 6px 20px rgba(0, 0, 0, 0.7);  
+    }
+    * { box-sizing: border-box }
+    html, body {  
+      height: 100%;  
+      margin: 0;  
+      background: var(--bg);
+      color: var(--text);  
+      transition: background 0.3s, color 0.3s;
+    }
+    html.dark-mode ::-webkit-scrollbar { width: 8px; }
+    html.dark-mode ::-webkit-scrollbar-track { background: var(--bg); }
+    html.dark-mode ::-webkit-scrollbar-thumb {
+      background-color: var(--reply-border);
+      border-radius: 20px;
+      border: 2px solid var(--bg);
+    }
+    .app { max-width: 980px; margin: 28px auto; padding: 18px }
+    header { display: flex; gap: 12px; align-items: center; justify-content: space-between }
+    .brand { display: flex; gap: 12px; align-items: center }
+    .logo {  
+      width: 44px; height: 44px; border-radius: 10px;  
+      background: linear-gradient(135deg, var(--accent), #06b6d4);  
+      display: flex; align-items: center; justify-content: center;  
+      color: white; font-weight: 700;
+    }
+    h1 { font-size: 18px; margin: 0 }
+    p.lead { margin: 0; color: var(--muted); font-size: 13px }
+    .controls { display: flex; gap: 8px; align-items: center }
+    button, .btn {
+      background: var(--accent); color: white; border: none;  
+      padding: 10px 12px; border-radius: 10px; cursor: pointer;  
+      box-shadow: var(--shadow); transition: background 0.2s, box-shadow 0.2s;
+    }
+    button:hover, .btn:hover { opacity: 0.9; }
+    .btn.secondary {  
+      background: transparent; color: var(--accent);  
+      border: 1px solid var(--border); box-shadow: none;  
+      transition: background 0.2s, color 0.2s, border-color 0.2s;
+    }
+    .btn.secondary:hover { background: rgba(37, 99, 235, 0.05); }
+    html.dark-mode .btn.secondary:hover { background: rgba(255, 255, 255, 0.08); }
+    .icon-btn {  
+      background: transparent; border: none; padding: 8px;  
+      border-radius: 8px; cursor: pointer; color: var(--text);
+    }
+    .icon-btn:hover { background: var(--hover-bg); }
+    .grid { display: grid; grid-template-columns: 260px 1fr; gap: 18px; margin-top: 18px }
+    .card {  
+      background: var(--card); border-radius: var(--radius);  
+      padding: 14px; box-shadow: var(--shadow); transition: background 0.3s, box-shadow 0.3s;
+    }
+    .categories { display: flex; flex-direction: column; gap: 8px }
+    .cat {  
+      padding: 8px 10px; border-radius: 10px; cursor: pointer;  
+      color: var(--muted); display: flex; justify-content: space-between;  
+      transition: background 0.2s, color 0.2s;
+    }
+    .cat:hover { background: var(--hover-bg); color: var(--text); }
+    .cat.active {  
+      background: rgba(37, 99, 235, 0.08); color: var(--accent); font-weight: 600;
+    }
+    html.dark-mode .cat.active { background: rgba(96, 165, 250, 0.2); }
+    .thread { display: flex; gap: 12px; padding: 10px; border-radius: 10px; align-items: flex-start }
+    .thread:hover { background: var(--hover-bg); }
+    .meta { font-size: 12px; color: var(--muted) }
+    .dot { width: 10px; height: 10px; border-radius: 50%; background: var(--border) }
+    textarea, input[type="text"], input[type="password"], select {
+      width: 100%; padding: 10px; border-radius: 10px;  
+      border: 1px solid var(--border); resize: vertical;
+      background: var(--card); color: var(--text);
+      transition: border-color 0.3s, background 0.3s;
+    }
+    input[type="text"], input[type="password"] { padding: 8px; border-radius: 8px; }
+    .thread-title { font-size: 18px; margin: 0 }
+    .thread-actions { display: flex; gap: 8px; align-items: center }
+    .reply {  
+      margin-top: 12px; padding: 10px; border-radius: 10px;  
+      border: 1px solid var(--reply-border); background: var(--reply-bg);
+    }
+    .reply .meta { font-size: 12px }
+    .btn.small { padding: 6px 8px; font-size: 12px; border-radius: 6px; }
+    .vote { display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 6px 8px; border-radius: 8px }
+    .vote button { background: transparent; border: none; cursor: pointer; color: var(--muted); }
+    .vote button:hover { color: var(--accent); }
+    .votes-count { font-weight: 700; color: var(--text); }
+    .avatar {  
+      width: 36px; height: 36px; border-radius: 10px;  
+      background: var(--border); display: flex; align-items: center;  
+      justify-content: center; color: var(--muted); font-weight: 700;
+    }
+    
+    /* NOTIFIKASI DIHAPUS, TAPI STYLING BISA DIBIARKAN KARENA TIDAK MENGGANGGU */
+    .notif-badge {  
+      background: #ef4444; color: white; border-radius: 10px;  
+      padding: 4px 6px; font-size: 12px;
+    }
+    
+    .modal-backdrop {  
+      position: fixed; inset: 0;  
+      background: rgba(2, 6, 23, 0.45);  
+      display: flex; align-items: center; justify-content: center;  
+      padding: 16px; z-index: 999;
+    }
+    html.dark-mode .modal-backdrop { background: rgba(0, 0, 0, 0.8); }
+    .thread-media img, .thread-media video {
+        max-width: 100%;
+        height: auto;
+        border-radius: 8px;
+        margin-top: 10px;
+        display: block;
+        max-height: 400px;
+        background: var(--border);  
+        border: 1px solid var(--border);
+    }
+    html.dark-mode .thread-media video {
+        color: var(--text);  
+        background-color: var(--bg);
+    }
+    @media (max-width: 800px) {
+      .grid { grid-template-columns: 1fr; }
+      .brand h1 { font-size: 16px }
+      .logo { width: 40px; height: 40px }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <header>
+      <div class="brand">
+        <div class="logo">FB</div>
+        <div>
+          <h1>Forum Pembahasan Orang BarBar</h1>
+          <p class="lead">Diskusi Terbuka Siapa Saja</p>
+        </div>
+      </div>
+      <div class="controls">
+        <button class="icon-btn" id="theme-toggle" title="Ganti Tema">
+          <span id="theme-icon">☀️</span>
+        </button>
+        <button class="btn" id="new-thread-btn">Buat Thread</button>
+      </div>
+    </header>
+
+    <div class="grid">
+      <aside class="card">
+        <h3 style="margin-top: 0">Kategori</h3>
+        <div class="categories" id="categories"></div>
+        <hr style="margin: 12px 0; border-color: var(--border);">
+        <div>
+          <strong>Info</strong>
+          <p style="color: var(--muted); font-size: 13px">Demo: penyimpanan lokal (localStorage). Cocok untuk prototipe dan belajar.</p>
+        </div>
+      </aside>
+
+      <main>
+        <div class="card" id="composer-card">
+          <div style="display: flex; gap: 10px; align-items: flex-start">
+            <div style="flex: 1">
+              <input type="text" id="composer-name" placeholder="Nama Anda..." />
+              <div style="height: 8px"></div>
+              
+              <input type="text" id="thread-title" placeholder="Judul thread..." />
+              <div style="height: 8px"></div>
+              <textarea id="thread-body" placeholder="Tulis sesuatu untuk memulai diskusi..."></textarea>
+              <div style="height: 8px"></div>
+              <input type="text" id="thread-media-url" placeholder="URL Foto/Video/GIF (Opsional)" />
+              
+              <div style="display: flex; gap: 8px; justify-content: space-between; margin-top: 8px; align-items: center">
+                <select id="thread-category"></select>
+                <div style="display: flex; gap: 8px">
+                  <button class="btn" id="post-thread">Posting</button>
+                  <button class="btn secondary" id="clear-thread">Bersihkan</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div style="height: 14px"></div>
+
+        <div id="threads-list"></div>
+      </main>
+    </div>
+
+    <div id="modal-root"></div>
+  </div>
+
+  <script>
+    // Variabel global yang digunakan di seluruh skrip
+    const htmlEl = document.documentElement; // Akses elemen <html>
+    
+    // ======= Simple local-storage forum implementation =======
+    const DEFAULT_CATS = ['Teknologi', 'Lifestyle', 'Edukasi', 'Hiburan', 'Umum'];
+
+    function loadData() {
+      const raw = localStorage.getItem('obrolin_data');
+      if (raw) return JSON.parse(raw);
+      // Array 'users' dan 'notifications' tetap ada di data, tapi tidak akan kita gunakan lagi
+      const data = { users: [], threads: [], notifications: [] };
+      return data;
+    }
+    function saveData(d) { localStorage.setItem('obrolin_data', JSON.stringify(d)); }
+
+    let data = loadData();
+    // 2. currentUser DIHAPUS
+    // let currentUser = JSON.parse(localStorage.getItem('obrolin_currentUser') || 'null');
+    const modalRoot = document.getElementById('modal-root');
+
+    // ===== UI helpers =====
+    function el(html) { const div = document.createElement('div'); div.innerHTML = html.trim(); return div.firstChild; }
+    
+    // ===== Theme Toggler Logic (UPDATED) =====
+    const themeToggleBtn = document.getElementById('theme-toggle');
+    const themeIcon = document.getElementById('theme-icon');
+    let isDarkMode = htmlEl.classList.contains('dark-mode'); 
+
+    function applyTheme() {
+      if (isDarkMode) {
+        htmlEl.classList.add('dark-mode');
+        themeIcon.textContent = '🌙';
+        localStorage.setItem('obrolin_theme', 'dark');
+      } else {
+        htmlEl.classList.remove('dark-mode');
+        themeIcon.textContent = '☀️';
+        localStorage.setItem('obrolin_theme', 'light');
+      }
+    }
+    
+    themeIcon.textContent = isDarkMode ? '🌙' : '☀️';
+
+    themeToggleBtn.onclick = () => {
+      isDarkMode = !isDarkMode;
+      applyTheme();
+    };
+
+    // 2. ===== Auth (SEBANYAK INI DIHAPUS) =====
+    // function renderTopProfile() { ... }
+    // function openAuthModal() { ... }
+
+    // ===== Modal helpers =====
+    function showModal(inner) {
+      modalRoot.innerHTML = `<div class="modal-backdrop">${inner}</div>`;
+    }
+    function closeModal() { modalRoot.innerHTML = ''; }
+
+    // ===== categories =====
+    function renderCategories(active = 'Semua') {
+      const root = document.getElementById('categories'); root.innerHTML = '';
+      const cats = ['Semua', ...DEFAULT_CATS];
+      cats.forEach(c => {
+        const d = el(`<div class="cat ${c === active ? 'active' : ''}" data-cat="${c}">${c} <span style="color:var(--muted)"></span></div>`);
+        d.onclick = () => { renderCategories(c); renderThreads(c); document.getElementById('thread-category').value = (DEFAULT_CATS.includes(c) ? c : DEFAULT_CATS[0]); }
+        root.appendChild(d);
+      })
+    }
+
+    // ===== composer =====
+    function renderComposer() {
+      // 2. Avatar composer dihapus
+      // document.getElementById('composer-avatar').textContent = ...
+      const sel = document.getElementById('thread-category'); sel.innerHTML = ''; DEFAULT_CATS.forEach(c => { const opt = document.createElement('option'); opt.value = c; opt.textContent = c; sel.appendChild(opt); });
+      document.getElementById('post-thread').onclick = postThread;
+      document.getElementById('clear-thread').onclick = () => { 
+        document.getElementById('composer-name').value = ''; // 3. Bersihkan nama juga
+        document.getElementById('thread-title').value = ''; 
+        document.getElementById('thread-body').value = ''; 
+        document.getElementById('thread-media-url').value = ''; 
+      }
+    }
+
+    function postThread() {
+      // 2. Pengecekan currentUser dihapus
+      // if (!currentUser) { openAuthModal(); return; }
+      
+      // 3. Ambil nilai dari input nama
+      const name = document.getElementById('composer-name').value.trim();
+      const title = document.getElementById('thread-title').value.trim();
+      const body = document.getElementById('thread-body').value.trim();
+      const category = document.getElementById('thread-category').value;
+      const mediaUrl = document.getElementById('thread-media-url').value.trim();  
+      
+      // 3. Tambahkan validasi nama
+      if (!name || !title || !body) { alert('Nama, Judul, dan isi thread wajib diisi.'); return; }
+      
+      const thread = {  
+        id: Date.now().toString(),  
+        title,  
+        body,  
+        category,  
+        mediaUrl: mediaUrl,  
+        // 2. authorId dihapus
+        authorName: name, // 3. authorName diambil dari input
+        created: new Date().toISOString(),  
+        votes: 0,  
+        replies: []  
+      };
+      
+      data.threads.unshift(thread);  
+      saveData(data);  
+      renderThreads();  
+      // 3. Bersihkan nama setelah posting
+      document.getElementById('composer-name').value = '';  
+      document.getElementById('thread-title').value = '';  
+      document.getElementById('thread-body').value = '';
+      document.getElementById('thread-media-url').value = '';  
+    }
+    
+    // HELPER: Untuk membuat elemen media berdasarkan URL (Tetap sama)
+    function createMediaElement(url) {
+        if (!url) return '';
+        const ext = url.split('.').pop().toLowerCase().split('?')[0];  
+        let mediaHtml = '';
+
+        if (['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(ext)) {
+            mediaHtml = `<img src="${url}" alt="Thread Media" loading="lazy">`;
+        } else if (['mp4', 'webm', 'ogg'].includes(ext)) {
+            mediaHtml = `<video src="${url}" controls loading="lazy"></video>`;
+        }
+        
+        if (mediaHtml) {
+            return `<div class="thread-media">${mediaHtml}</div>`;
+        }
+        return '';
+    }
+
+    // ===== threads list & view (simplified rendering) =====
+    function renderThreads(filter = 'Semua') {
+      const list = document.getElementById('threads-list'); list.innerHTML = '';
+      const threads = data.threads.filter(t => filter === 'Semua' || t.category === filter);
+      if (threads.length === 0) list.innerHTML = '<div class="card" style="text-align:center; padding: 20px;">Belum ada thread. Jadilah yang pertama!</div>';
+      
+      threads.forEach(t => {
+        const mediaPreview = createMediaElement(t.mediaUrl);  
+        
+        const item = el(`
+          <div class="card thread" style="padding:15px">
+            <div style="display:flex;gap:12px;align-items:center">
+              <div class="vote">
+                <button class="up" data-id="${t.id}">▲</button>
+                <div class="votes-count">${t.votes}</div>
+                <button class="down" data-id="${t.id}">▼</button>
+              </div>
+            </div>
+            <div style="flex:1">
+              <div style="display:flex;justify-content:space-between;align-items:start">
+                <div>
+                  <div style="font-weight:700">${escapeHtml(t.title)}</div>
+                  <div class="meta">oleh ${escapeHtml(t.authorName)} • ${new Date(t.created).toLocaleString()}</div>
+                </div>
+                <div class="meta">${escapeHtml(t.category)}</div>
+              </div>
+              <div style="margin-top:8px;color:var(--muted);">${escapeHtml(truncate(t.body, 200))}</div>
+              
+              ${mediaPreview}  
+              
+              <div style="margin-top:10px;display:flex;gap:8px">
+                <button class="btn small" data-id="${t.id}" data-action="open">Buka (${t.replies.length} Balasan)</button>
+                <button class="btn secondary small" data-id="${t.id}" data-action="share">Bagikan</button>
+              </div>
+            </div>
+          </div>
+        `);
+        list.appendChild(item);
+        
+        // Attach dynamic listeners
+        item.querySelector('[data-action=open]').onclick = () => openThread(t.id);
+        item.querySelector('[data-action=share]').onclick = () => { navigator.clipboard?.writeText(window.location.href + '#t=' + t.id).then(() => alert('Link disalin ke clipboard')) }
+        
+        item.querySelector('.up').onclick = () => { t.votes++; item.querySelector('.votes-count').textContent = t.votes; saveData(data); };
+        item.querySelector('.down').onclick = () => { t.votes--; item.querySelector('.votes-count').textContent = t.votes; saveData(data); };
+      });
+      // 4. Update notif UI dihapus
+      // updateNotifUI();
+    }
+
+    function openThread(id) {
+      const t = data.threads.find(x => x.id === id); if (!t) return;
+      const mediaElementFull = createMediaElement(t.mediaUrl);  
+      
+      let html = `<div class="card" style="max-width:820px; padding:20px;">
+        <div style="display:flex;gap:12px;align-items:flex-start">
+          <div class="vote" style="padding:0;"><div style="font-size:24px; color:var(--accent);">${t.votes}</div><div class="meta">Votes</div></div>
+          <div style="flex:1">
+            <h2 class="thread-title">${escapeHtml(t.title)}</h2>
+            <div class="meta">oleh ${escapeHtml(t.authorName)} • ${new Date(t.created).toLocaleString()} • ${escapeHtml(t.category)}</div>
+            <div style="height:12px"></div>
+            <div style="white-space:pre-wrap; margin-bottom:15px;">${escapeHtml(t.body)}</div>
+            
+            ${mediaElementFull}  
+
+            <div class="thread-actions">
+              <button class="btn secondary" id="close-thread">Tutup</button>
+            </div>
+          </div>
+        </div>
+        <hr style="margin:16px 0; border-color: var(--border);">
+        <h3 style="margin-top:0">Balasan (${t.replies.length})</h3>
+        <div id="replies-root"></div>
+        <div style="height:10px"></div>
+        <div class="card" style="padding:10px 14px; border:1px solid var(--border); box-shadow:none;">
+          <div style="display:flex;gap:10px">
+            <div style="flex:1">
+              <input type="text" id="reply-name" placeholder="Nama Anda..." style="padding: 8px; border-radius: 8px; margin-bottom: 8px;" />
+              <textarea id="reply-body" placeholder="Tulis balasan..."></textarea>
+              <div style="display:flex;justify-content:flex-end;margin-top:8px">
+                <button class="btn" id="post-reply">Kirim Balasan</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>`;
+      showModal(html);
+
+      renderReplies(t);
+      document.getElementById('close-thread').onclick = closeModal;
+      document.getElementById('post-reply').onclick = () => {
+        // 2. Pengecekan currentUser dihapus
+        // if (!currentUser) { closeModal(); openAuthModal(); return; }
+        
+        // 3. Ambil nama dan validasi
+        const name = document.getElementById('reply-name').value.trim();
+        const body = document.getElementById('reply-body').value.trim(); 
+        if (!name || !body) { alert('Nama dan isi balasan wajib diisi.'); return; }
+        
+        // 3. Buat objek balasan baru dengan nama
+        const reply = { id: Date.now().toString(), authorId: null, authorName: name, body, created: new Date().toISOString(), replies: [], votes: 0, parentId: null };
+        t.replies.push(reply); 
+        saveData(data); 
+        renderReplies(t); 
+        // 4. Notifikasi dihapus
+        // notifyAuthorIfNeeded(t, reply); 
+        // updateNotifUI(); 
+        
+        // 3. Bersihkan input nama dan body
+        document.getElementById('reply-name').value = '';
+        document.getElementById('reply-body').value = '';
+      }
+    }
+
+    function renderReplies(thread) {
+      const root = document.getElementById('replies-root'); root.innerHTML = '';
+      function renderList(list, container, depth) {
+        list.forEach(r => {
+          const rep = document.createElement('div'); rep.className = 'reply'; rep.style.marginLeft = (depth * 15) + 'px';
+          rep.innerHTML = `<div style="display:flex;justify-content:space-between"><div><strong>${escapeHtml(r.authorName)}</strong><div class="meta">${new Date(r.created).toLocaleString()}</div></div><div class="meta">Votes: <span class="votes-count-reply">${r.votes}</span></div></div><div style="margin-top:8px;white-space:pre-wrap">${escapeHtml(r.body)}</div><div style="margin-top:8px;display:flex;gap:8px"><button class="btn small" data-id="${r.id}" data-action="reply">Balas</button><button class="icon-btn" data-id="${r.id}" data-action="up">▲</button><button class="icon-btn" data-id="${r.id}" data-action="down">▼</button></div>`;
+          container.appendChild(rep);
+
+          // Reply action handler
+          rep.querySelector('[data-action=reply]').onclick = () => {
+            // 2. Pengecekan currentUser dihapus
+            // if (!currentUser) { alert('Silakan masuk untuk membalas.'); return; }
+            const existingBox = rep.querySelector('.reply-box');
+            if (existingBox) { existingBox.remove(); return; } // Toggle close
+
+            const box = document.createElement('div'); box.className = 'reply-box'; box.style.marginTop = '8px';
+            // 3. Tambahkan input nama di balasan beruntun (nested reply)
+            box.innerHTML = `
+              <input type="text" placeholder="Nama Anda..." style="width:100%; padding: 8px; border-radius: 8px; border: 1px solid var(--border); background: var(--card); color: var(--text); margin-bottom: 6px; box-sizing: border-box;" />
+              <textarea placeholder="Balas..." style="width:100%;min-height:60px; padding:8px;"></textarea>
+              <div style="display:flex;justify-content:flex-end;margin-top:6px"><button class="btn small">Kirim</button></div>`;
+            rep.appendChild(box);
+
+            box.querySelector('button').onclick = () => {
+              // 3. Ambil nama dan validasi
+              const name = box.querySelector('input[type="text"]').value.trim();
+              const txt = box.querySelector('textarea').value.trim(); 
+              if (!name || !txt) { alert('Nama dan balasan wajib diisi.'); return; }
+              
+              // 3. Buat objek balasan baru
+              const newR = { id: Date.now().toString(), authorId: null, authorName: name, body: txt, created: new Date().toISOString(), replies: [], votes: 0, parentId: r.id };
+              r.replies.push(newR); 
+              saveData(data); 
+              renderReplies(thread); 
+              // 4. Notifikasi dihapus
+              // notifyAuthorIfNeeded(thread, newR); 
+              // updateNotifUI();
+            }
+          }
+
+          // Vote action handler
+          const vc = rep.querySelector('.votes-count-reply');
+          rep.querySelector('[data-action=up]').onclick = () => { r.votes++; vc.textContent = r.votes; saveData(data); }
+          rep.querySelector('[data-action=down]').onclick = () => { r.votes--; vc.textContent = r.votes; saveData(data); }
+
+          if (r.replies && r.replies.length) renderList(r.replies, container, depth + 1);
+        })
+      }
+      root.innerHTML = '';
+      renderList(thread.replies, root, 0);
+    }
+
+
+    // 4. ===== notifications (DIHAPUS SEMUA) =====
+    // function notifyAuthorIfNeeded(thread, reply) { ... }
+    // function updateNotifUI() { ... }
+    // function openNotifPanel() { ... }
+
+    // ===== utilities =====
+    function escapeHtml(s) { if (!s) return ''; return s.replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;').replaceAll('"', '&quot;').replaceAll("'", '&#039;'); }
+    function truncate(s, n) { return s.length > n ? s.slice(0, n - 1) + '…' : s; }
+
+    // ===== bootstrap =====
+    document.getElementById('new-thread-btn').onclick = () => { window.scrollTo({ top: 0, behavior: 'smooth' }); document.getElementById('thread-title').focus(); }
+    // 4. Notif-count dihapus
+    // document.getElementById('notif-count').textContent = '';
+    
+    // 2. renderTopProfile() dihapus
+    // renderTopProfile();  
+    renderComposer();  
+    renderCategories();  
+    renderThreads();  
+    // 4. updateNotifUI() dihapus
+    // updateNotifUI();
+
+    // Provide deep-link support: #t=threadid
+    if (window.location.hash.startsWith('#t=')) { const id = window.location.hash.split('=')[1]; setTimeout(() => openThread(id), 600); }
+
+    // expose for debugging
+    window._obrolin = { data, saveData, loadData, isDarkMode };
+  </script>
+</body>
+</html>
