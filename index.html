@@ -18,7 +18,7 @@
 
   <style>
     /* --- Reset & Variables --- */
-    /* (CSS Tetap sama, tidak perlu diubah) */
+    /* (CSS Tetap sama) */
     :root {
       --bg: #ffffff;
       --card: #f9fafb;  
@@ -90,7 +90,6 @@
     .icon-btn {  
       background: transparent; border: none; padding: 8px;  
       border-radius: 8px; cursor: pointer; color: var(--text);
-      /* --- TAMBAHAN: Atur ukuran font ikon agar konsisten --- */
       font-size: 18px; line-height: 1;
     }
     .icon-btn:hover { background: var(--hover-bg); }
@@ -119,7 +118,6 @@
       border: 1px solid var(--border); resize: vertical;
       background: var(--card); color: var(--text);
       transition: border-color 0.3s, background 0.3s;
-      /* --- TAMBAHAN: Pastikan box-sizing konsisten --- */
       box-sizing: border-box;
     }
     input[type="text"], input[type="password"] { padding: 8px; border-radius: 8px; }
@@ -139,13 +137,11 @@
       width: 36px; height: 36px; border-radius: 10px;  
       background: var(--border); display: flex; align-items: center;  
       justify-content: center; color: var(--muted); font-weight: 700;
-      /* --- TAMBAHAN: Cegah teks avatar diseleksi --- */
       user-select: none;
     }
-    /* --- TAMBAHAN: Style untuk Avatar berupa Gambar --- */
     .avatar-img {
       width: 36px; height: 36px; border-radius: 10px;
-      object-fit: cover; /* Memastikan gambar mengisi area tanpa distorsi */
+      object-fit: cover;
       background: var(--border);
     }
     .notif-badge {  
@@ -157,13 +153,11 @@
       background: rgba(2, 6, 23, 0.45);  
       display: flex; align-items: center; justify-content: center;  
       padding: 16px; z-index: 999;
-      /* --- TAMBAHAN: Animasi fade-in --- */
       animation: fadeIn 0.2s ease-out;
     }
-    /* --- TAMBAHAN: Style untuk nested modal (profil di atas thread) --- */
     .modal-backdrop.nested {
         z-index: 1000;
-        background: rgba(2, 6, 23, 0.2); /* Lebih transparan */
+        background: rgba(2, 6, 23, 0.2);
     }
     @keyframes fadeIn {
         from { opacity: 0; }
@@ -186,6 +180,14 @@
         color: var(--text);  
         background-color: var(--bg);
     }
+    
+    /* --- INI BARIS BARU --- */
+    /* Mengubah font di modal profil */
+    .profile-modal-content {
+        font-family: Arial, "Helvetica Neue", Helvetica, sans-serif;
+    }
+    /* ---------------------- */
+
     @media (max-width: 800px) {
       .grid { grid-template-columns: 1fr; }
       .brand h1 { font-size: 16px }
@@ -227,9 +229,10 @@
         <div class="card" id="composer-card">
           <div style="display: flex; gap: 10px; align-items: flex-start">
             <div style="flex: 1">
-              <input type="text" id="composer-name" placeholder="Nama Anda..." />
-              <button class="btn secondary small" id="edit-profile-btn" style="margin-top: 4px; display: none;">Edit Profil</button>
-              <div style="height: 8px"></div>
+              <label for="composer-name">Nama Anda (dari profil):</label>
+              <input type="text" id="composer-name" placeholder="Atur nama di profil dulu..." readonly style="background: var(--reply-bg); margin-top: 4px;" />
+              <button class="btn secondary small" id="edit-profile-btn" style="margin-top: 4px;">Set/Edit Profil</button>
+              <div style="height: 12px"></div>
               
               <input type="text" id="thread-title" placeholder="Judul thread..." />
               <div style="height: 8px"></div>
@@ -259,29 +262,25 @@
 
   <script>
     // Variabel global yang digunakan di seluruh skrip
-    const htmlEl = document.documentElement; // Akses elemen <html>
+    const htmlEl = document.documentElement;
     
     // ======= Simple local-storage forum implementation =======
     
-    // --- INI ADALAH BARIS YANG DIUBAH ---
     const DEFAULT_CATS = [
       'Teknologi', 'Hiburan', 'Umum',  
       'Matematika', 'Biologi', 'Ekonomi', 'Fisika',  
       'Bahasa Inggris', 'Kimia', 'PP', 'Sejarah'
     ];
-    // ------------------------------------
 
     function loadData() {
       const raw = localStorage.getItem('obrolin_data');
       if (raw) {
         const parsedData = JSON.parse(raw);
-        // --- MODIFIKASI: Pastikan data.users ada dan berupa array ---
         if (!parsedData.users || !Array.isArray(parsedData.users)) {
             parsedData.users = [];
         }
         return parsedData;
       }
-      // Pastikan users ada di data default
       const data = { users: [], threads: [], notifications: [] };
       return data;
     }
@@ -289,7 +288,6 @@
 
     let data = loadData();
     const modalRoot = document.getElementById('modal-root');
-    // --- TAMBAHAN: Lacak ID thread yang sedang dibuka ---
     let currentOpenThreadId = null;
 
     // ===== UI helpers =====
@@ -321,75 +319,54 @@
 
     // ===== Modal helpers (MODIFIKASI) =====
     function showModal(inner, isNested = false) {
-      // --- MODIFIKASI: Buat backdrop baru, jangan hapus yg lama jika nested ---
       const backdrop = el(`<div class="modal-backdrop ${isNested ? 'nested' : ''}">${inner}</div>`);
       
       if (isNested) {
-          // Jika modal bersarang (misal: profil di atas thread)
           modalRoot.appendChild(backdrop);
-          // Izinkan tutup modal nested dgn klik backdrop-nya
           backdrop.onclick = (e) => {
               if (e.target === backdrop) backdrop.remove();
           };
-          // Cegah klik di card menutup modal
           backdrop.querySelector('.card').onclick = (e) => e.stopPropagation();
       } else {
-          // Modal normal, hapus semua yg lama
           modalRoot.innerHTML = '';
           modalRoot.appendChild(backdrop);
       }
     }
     function closeModal() { 
-        // --- MODIFIKASI: Hanya hapus modal paling atas jika ada > 1 ---
         if (modalRoot.children.length > 1) {
             modalRoot.removeChild(modalRoot.lastChild);
         } else {
             modalRoot.innerHTML = '';
         }
     }
-    // --- TAMBAHAN: Fungsi untuk menutup semua modal ---
     function closeAllModals() {
         modalRoot.innerHTML = '';
-        currentOpenThreadId = null; // Reset ID thread
+        currentOpenThreadId = null;
     }
 
-    // --- TAMBAHAN: Helper Profil Pengguna ---
-    /**
-     * Mencari atau membuat profil pengguna berdasarkan nama.
-     * @param {string} name - Nama pengguna.
-     * @returns {object} Objek profil pengguna ({ name, bio, pfp }).
-     */
+    // --- Helper Profil Pengguna ---
     function getOrCreateUserProfile(name) {
-        if (!name) return { name: 'Anonim', bio: '', pfp: '' }; // Fallback
+        if (!name) return { name: 'Anonim', bio: '', pfp: '' };
         
         let user = data.users.find(u => u.name.toLowerCase() === name.toLowerCase());
         if (user) {
             return user;
         }
-        // Jika tidak ada, buat baru
         user = {
             name: name,
-            bio: '', // Bio default
-            pfp: ''  // pfp = profile picture (sebagai Data URL atau URL)
+            bio: '',
+            pfp: ''
         };
         data.users.push(user);
-        saveData(data); // Simpan user baru ke localStorage
+        saveData(data);
         return user;
     }
 
-    /**
-     * Membuat HTML untuk avatar (foto profil atau inisial).
-     * @param {object} user - Objek profil pengguna.
-     * @param {number} size - Ukuran avatar dalam piksel.
-     * @returns {string} String HTML untuk elemen avatar.
-     */
     function renderAvatar(user, size = 36) {
         const style = `width:${size}px; height:${size}px; font-size:${size * 0.5}px;`;
         if (user && user.pfp) {
-            // Jika punya pfp (URL atau Data URL)
             return `<img src="${user.pfp}" alt="${escapeHtml(user.name)}" class="avatar-img" style="${style}">`;
         }
-        // Fallback ke inisial
         const initial = user ? escapeHtml(user.name[0] || '?').toUpperCase() : '?';
         return `<div class="avatar" style="${style}">${initial}</div>`;
     }
@@ -401,9 +378,13 @@
     function openProfileViewer(name) {
         const user = getOrCreateUserProfile(name);
         
+        // --- INI BARIS YANG DIUBAH ---
+        // Menambahkan class 'profile-modal-content' untuk font simpel
         const modalHtml = `
-        <div class="card" style="max-width:500px; padding:20px; text-align:center;">
-            ${renderAvatar(user, 120)} <h2 style="margin-top: 10px; margin-bottom: 5px;">${escapeHtml(user.name)}</h2>
+        <div class="card profile-modal-content" style="max-width:500px; padding:20px; text-align:center;">
+            ${renderAvatar(user, 120)}
+            
+            <h2 style="margin-top: 10px; margin-bottom: 5px;">${escapeHtml(user.name)}</h2>
             
             <div style="color: var(--muted); white-space: pre-wrap; min-height: 40px; margin-bottom: 20px;">
                 ${user.bio ? escapeHtml(user.bio) : '<i>Pengguna ini belum menulis bio.</i>'}
@@ -412,67 +393,74 @@
             <button class="btn secondary" id="close-profile-viewer">Tutup</button>
         </div>
         `;
-        // Tampilkan sebagai modal bersarang (nested)
+        // -----------------------------
+        
         showModal(modalHtml, true); 
         
-        // Tombol tutup hanya menutup modal ini
         document.getElementById('close-profile-viewer').onclick = closeModal;
     }
 
     /**
      * Membuka modal untuk mengedit profil pengguna.
-     * @param {string} name - Nama pengguna yang akan diedit.
+     * @param {string} currentName - Nama pengguna saat ini.
      */
-    function openProfileEditor(name) {
-        const user = getOrCreateUserProfile(name);
-        let pfpData = user.pfp; // Simpan PFP baru di sini (bisa URL atau Data URL)
+    function openProfileEditor(currentName) {
+        // --- MODIFIKASI: Selalu panggil getOrCreate, meskipun nama kosong
+        const user = getOrCreateUserProfile(currentName || "");
+        // Jika nama aslinya kosong (user baru), 'currentName' akan di-supply
+        // oleh prompt di 'my-profile-btn'. Jika user ada, 'currentName' valid.
+        
+        let pfpData = user.pfp;
 
+        // --- INI ADALAH MODAL YANG DIUBAH ---
         const modalHtml = `
-        <div class="card" style="max-width:500px; padding:20px;">
-            <h2>Edit Profil: ${escapeHtml(name)}</h2>
+        <div class="card profile-modal-content" style="max-width:500px; padding:20px;">
+            <h2>Edit Profil</h2>
             
-            <div style="text-align:center; margin-bottom: 12px;">
+            <label for="profile-name-input" style="font-weight: 600;">Nama Tampilan Anda:</label>
+            <input type="text" id="profile-name-input" placeholder="Nama Anda..." value="${escapeHtml(user.name)}" style="margin-top: 4px;">
+            <div style="height:16px"></div>
+
+            <label style="font-weight: 600;">Foto Profil:</label>
+            <div style="text-align:center; margin-bottom: 12px; margin-top: 8px;">
                 <div id="pfp-preview-container">
                     ${renderAvatar(user, 100)}
                 </div>
             </div>
             
-            <label for="pfp-url">Foto Profil (Tempel URL):</label>
-            <input type="text" id="pfp-url" placeholder="https_//...gambar.png" value="${user.pfp.startsWith('http') ? user.pfp : ''}" style="margin-top: 4px;">
+            <label for="pfp-upload">Upload file (max 2MB):</label>
+            <input type="file" id="pfp-upload" accept="image/png, image/jpeg, image/gif, image/webp" style="padding: 5px; margin-top: 4px;">
+            <button class="btn secondary small" id="remove-pfp" style="background: #ef4444; color: white; border: none; margin-top: 6px; ${!user.pfp ? 'display:none' : ''}">Hapus Foto</button>
             
-            <p style="text-align:center; margin: 4px 0; color: var(--muted); font-size: 13px;">...atau upload file (max 2MB):</p>
-            <input type="file" id="pfp-upload" accept="image/png, image/jpeg, image/gif, image/webp" style="padding: 5px;">
+            <div style="height:16px"></div>
             
-            <div style="height:12px"></div>
-            
-            <label for="bio-input">Bio:</label>
+            <label for="bio-input" style="font-weight: 600;">Bio:</label>
             <textarea id="bio-input" placeholder="Ceritakan sedikit tentang diri Anda..." style="min-height: 80px; margin-top: 4px;">${escapeHtml(user.bio)}</textarea>
             
-            <div style="display:flex; justify-content:space-between; gap: 8px; margin-top: 16px; align-items:center;">
-                <button class="btn secondary small" id="remove-pfp" style="background: #ef4444; color: white; border: none; ${!user.pfp ? 'display:none' : ''}">Hapus Foto</button>
-                <div style="display:flex; gap: 8px;">
-                    <button class="btn secondary" id="cancel-profile">Batal</button>
-                    <button class="btn" id="save-profile">Simpan</button>
-                </div>
+            <div style="display:flex; justify-content: flex-end; gap: 8px; margin-top: 16px;">
+                <button class="btn secondary" id="cancel-profile">Batal</button>
+                <button class="btn" id="save-profile">Simpan</button>
             </div>
         </div>
         `;
-        // Tampilkan sebagai modal normal (menutup yg lain)
-        closeAllModals(); // Tutup modal lain jika ada
+        // ------------------------------------
+        
+        closeAllModals();
         showModal(modalHtml, false);
 
         const pfpUpload = document.getElementById('pfp-upload');
-        const pfpUrlInput = document.getElementById('pfp-url');
         const pfpPreviewContainer = document.getElementById('pfp-preview-container');
         const removePfpBtn = document.getElementById('remove-pfp');
 
         const updatePreview = () => {
-            const tempUser = { name: name, pfp: pfpData };
+            // Gunakan nama dari input field untuk preview, jika ada
+            const previewName = document.getElementById('profile-name-input').value || user.name;
+            const tempUser = { name: previewName, pfp: pfpData };
             pfpPreviewContainer.innerHTML = renderAvatar(tempUser, 100);
             removePfpBtn.style.display = pfpData ? 'inline-block' : 'none';
         };
 
-        // Handle File Upload (konversi ke Data URL Base64)
+        // Handle File Upload
         pfpUpload.onchange = (e) => {
             const file = e.target.files[0];
             if (file) {
@@ -484,35 +472,74 @@
                 const reader = new FileReader();
                 reader.onload = (event) => {
                     pfpData = event.target.result;
-                    pfpUrlInput.value = ''; // Kosongkan input URL
                     updatePreview();
                 };
                 reader.readAsDataURL(file);
             }
         };
 
-        // Handle URL input
-        pfpUrlInput.oninput = () => {
-             pfpData = pfpUrlInput.value.trim();
-             pfpUpload.value = ''; // Kosongkan input file
-             updatePreview();
-        };
-
         // Handle Hapus Foto
         removePfpBtn.onclick = () => {
             pfpData = '';
-            pfpUrlInput.value = '';
             pfpUpload.value = '';
             updatePreview();
         };
 
-        // Handle Tombol Simpan
+        // Handle Tombol Simpan (LOGIKA BARU)
         document.getElementById('save-profile').onclick = () => {
-            user.bio = document.getElementById('bio-input').value.trim();
+            const newName = document.getElementById('profile-name-input').value.trim();
+            const newBio = document.getElementById('bio-input').value.trim();
+            const oldName = user.name; // Nama sebelum diedit
+
+            if (!newName) {
+                alert('Nama tidak boleh kosong.');
+                return;
+            }
+
+            // Cek jika nama diubah dan nama baru sudah ada
+            if (newName.toLowerCase() !== oldName.toLowerCase() && data.users.find(u => u.name.toLowerCase() === newName.toLowerCase())) {
+                alert('Nama tersebut sudah dipakai. Silakan pilih nama lain.');
+                return;
+            }
+            
+            // --- Logika untuk update nama di semua tempat ---
+            if (newName !== oldName) {
+                // 1. Update di data.users
+                user.name = newName;
+                
+                // Fungsi rekursif untuk update balasan
+                function updateReplies(replies) {
+                    replies.forEach(r => {
+                        if (r.authorName === oldName) {
+                            r.authorName = newName;
+                        }
+                        if (r.replies && r.replies.length > 0) {
+                            updateReplies(r.replies);
+                        }
+                    });
+                }
+                
+                // 2. Update di data.threads
+                data.threads.forEach(t => {
+                    if (t.authorName === oldName) {
+                        t.authorName = newName;
+                    }
+                    // 3. Update di semua balasan thread tsb
+                    updateReplies(t.replies);
+                });
+                
+                // 4. Update nama pengguna aktif di localStorage
+                localStorage.setItem('obrolin_last_user', newName);
+            }
+            
+            // Update bio dan pfp
+            user.bio = newBio;
             user.pfp = pfpData;
+            
             saveData(data);
             closeAllModals();
-            renderThreads(); // Render ulang thread untuk update avatar
+            renderComposer(); // Render ulang composer untuk update nama readonly
+            renderThreads(); // Render ulang semua thread untuk update nama
         };
         
         document.getElementById('cancel-profile').onclick = closeAllModals;
@@ -535,58 +562,54 @@
       const sel = document.getElementById('thread-category'); sel.innerHTML = ''; DEFAULT_CATS.forEach(c => { const opt = document.createElement('option'); opt.value = c; opt.textContent = c; sel.appendChild(opt); });
       document.getElementById('post-thread').onclick = postThread;
       document.getElementById('clear-thread').onclick = () => {  
-        // document.getElementById('composer-name').value = ''; // Jangan hapus nama
         document.getElementById('thread-title').value = '';  
         document.getElementById('thread-body').value = '';  
         document.getElementById('thread-media-url').value = '';  
       }
 
-      // --- TAMBAHAN: Logika untuk tombol "Edit Profil" cepat ---
+      // --- LOGIKA BARU untuk composer name ---
       const composerNameInput = document.getElementById('composer-name');
       const editProfileBtn = document.getElementById('edit-profile-btn');
       
       // Isi nama terakhir yang dipakai
-      composerNameInput.value = localStorage.getItem('obrolin_last_user') || '';
-      if (composerNameInput.value) {
-          editProfileBtn.style.display = 'inline-block';
+      const currentUserName = localStorage.getItem('obrolin_last_user');
+      if (currentUserName) {
+          composerNameInput.value = currentUserName;
+      } else {
+          composerNameInput.placeholder = 'Klik "Set/Edit Profil" untuk atur nama...';
       }
 
-      composerNameInput.oninput = () => {
-          if (composerNameInput.value.trim()) {
-              editProfileBtn.style.display = 'inline-block';
-          } else {
-              editProfileBtn.style.display = 'none';
-          }
-      };
-
       editProfileBtn.onclick = () => {
-          const name = composerNameInput.value.trim();
-          if (!name) return;
-          localStorage.setItem('obrolin_last_user', name); // Simpan nama
+          // Selalu panggil openProfileEditor dengan nama saat ini
+          const name = localStorage.getItem('obrolin_last_user') || "";
           openProfileEditor(name);
       };
     }
 
     function postThread() {
-      const name = document.getElementById('composer-name').value.trim();
+      // --- MODIFIKASI: Nama diambil dari localStorage ---
+      const name = localStorage.getItem('obrolin_last_user');
+      
       const title = document.getElementById('thread-title').value.trim();
       const body = document.getElementById('thread-body').value.trim();
       const category = document.getElementById('thread-category').value;
       const mediaUrl = document.getElementById('thread-media-url').value.trim();  
       
-      if (!name || !title || !body) { alert('Nama, Judul, dan isi thread wajib diisi.'); return; }
+      // --- MODIFIKASI: Validasi baru ---
+      if (!name) {
+          alert('Anda harus mengatur nama di profil Anda terlebih dahulu sebelum posting.');
+          openProfileEditor(""); // Buka editor profil jika nama kosong
+          return;
+      }
+      if (!title || !body) { alert('Judul dan isi thread wajib diisi.'); return; }
       
-      // --- TAMBAHAN: Simpan nama terakhir & pastikan profil ada ---
-      localStorage.setItem('obrolin_last_user', name);
-      getOrCreateUserProfile(name); // Pastikan user ada di data
+      // Pastikan profil ada (seharusnya sudah)
+      getOrCreateUserProfile(name);
       
       const thread = {  
         id: Date.now().toString(),  
-        title,  
-        body,  
-        category,  
-        mediaUrl: mediaUrl,  
-        authorName: name,  
+        title, body, category, mediaUrl,
+        authorName: name, // Simpan nama dari profil
         created: new Date().toISOString(),  
         votes: 0,  
         replies: []  
@@ -595,7 +618,6 @@
       data.threads.unshift(thread);  
       saveData(data);  
       renderThreads();  
-      // document.getElementById('composer-name').value = ''; // Jangan hapus nama
       document.getElementById('thread-title').value = '';  
       document.getElementById('thread-body').value = '';
       document.getElementById('thread-media-url').value = '';  
@@ -619,7 +641,7 @@
         return '';
     }
 
-    // ===== threads list & view (MODIFIKASI) =====
+    // ===== threads list & view (Tidak berubah) =====
     function renderThreads(filter = 'Semua') {
       const list = document.getElementById('threads-list'); list.innerHTML = '';
       const threads = data.threads.filter(t => filter === 'Semua' || t.category === filter);
@@ -627,8 +649,6 @@
       
       threads.forEach(t => {
         const mediaPreview = createMediaElement(t.mediaUrl);  
-        
-        // --- TAMBAHAN: Ambil profil dan render avatar ---
         const user = getOrCreateUserProfile(t.authorName);
         const avatarHtml = renderAvatar(user, 36);
         
@@ -656,9 +676,7 @@
                 <div class="meta">${escapeHtml(t.category)}</div>
               </div>
               <div style="margin-top:8px;color:var(--muted);">${escapeHtml(truncate(t.body, 200))}</div>
-              
               ${mediaPreview}  
-              
               <div style="margin-top:10px;display:flex;gap:8px">
                 <button class="btn small" data-id="${t.id}" data-action="open">Buka (${t.replies.length} Balasan)</button>
                 <button class="btn secondary small" data-id="${t.id}" data-action="share">Bagikan</button>
@@ -668,13 +686,10 @@
         `);
         list.appendChild(item);
         
-        // --- TAMBAHAN: Event listener untuk lihat profil ---
         item.querySelector('.avatar-wrapper').onclick = () => openProfileViewer(t.authorName);
         item.querySelector('.author-name').onclick = () => openProfileViewer(t.authorName);
-
         item.querySelector('[data-action=open]').onclick = () => openThread(t.id);
         item.querySelector('[data-action=share]').onclick = () => { navigator.clipboard?.writeText(window.location.href + '#t=' + t.id).then(() => alert('Link disalin ke clipboard')) }
-        
         item.querySelector('.up').onclick = () => { t.votes++; item.querySelector('.votes-count').textContent = t.votes; saveData(data); };
         item.querySelector('.down').onclick = () => { t.votes--; item.querySelector('.votes-count').textContent = t.votes; saveData(data); };
       });
@@ -682,13 +697,8 @@
 
     function openThread(id) {
       const t = data.threads.find(x => x.id === id); if (!t) return;
-      
-      // --- TAMBAHAN: Simpan ID thread yg dibuka ---
       currentOpenThreadId = id;
-
       const mediaElementFull = createMediaElement(t.mediaUrl);  
-      
-      // --- TAMBAHAN: Ambil profil dan render avatar ---
       const user = getOrCreateUserProfile(t.authorName);
       const avatarHtml = renderAvatar(user, 40);
       
@@ -708,9 +718,7 @@
             </div>
             <div style="height:12px"></div>
             <div style="white-space:pre-wrap; margin-bottom:15px;">${escapeHtml(t.body)}</div>
-            
             ${mediaElementFull}  
-
             <div class="thread-actions">
               <button class="btn secondary" id="close-thread">Tutup</button>
             </div>
@@ -723,7 +731,7 @@
         <div class="card" style="padding:10px 14px; border:1px solid var(--border); box-shadow:none;">
           <div style="display:flex;gap:10px">
             <div style="flex:1">
-              <input type="text" id="reply-name" placeholder="Nama Anda..." style="padding: 8px; border-radius: 8px; margin-bottom: 8px;" />
+              <input type="text" id="reply-name" placeholder="Atur nama di profil..." readonly style="padding: 8px; border-radius: 8px; margin-bottom: 8px; background: var(--reply-bg);" />
               <textarea id="reply-body" placeholder="Tulis balasan..."></textarea>
               <div style="display:flex;justify-content:flex-end;margin-top:8px">
                 <button class="btn" id="post-reply">Kirim Balasan</button>
@@ -734,34 +742,35 @@
       </div>`;
       showModal(html);
 
-      // --- TAMBAHAN: Isi nama terakhir di form balasan ---
       const replyNameInput = document.getElementById('reply-name');
       replyNameInput.value = localStorage.getItem('obrolin_last_user') || '';
 
-      // --- TAMBAHAN: Listener untuk lihat profil di modal ---
       document.querySelector('.modal-backdrop .avatar-wrapper').onclick = () => openProfileViewer(t.authorName);
       document.querySelector('.modal-backdrop .author-name').onclick = () => openProfileViewer(t.authorName);
 
       renderReplies(t);
       document.getElementById('close-thread').onclick = () => {
-          currentOpenThreadId = null; // Reset ID
+          currentOpenThreadId = null;
           closeAllModals();
       }
       document.getElementById('post-reply').onclick = () => {
+        // --- MODIFIKASI: Nama diambil dari localStorage ---
         const name = replyNameInput.value.trim();
         const body = document.getElementById('reply-body').value.trim();  
-        if (!name || !body) { alert('Nama dan isi balasan wajib diisi.'); return; }
         
-        // --- TAMBAHAN: Simpan nama & pastikan profil ada ---
-        localStorage.setItem('obrolin_last_user', name);
+        if (!name) {
+             alert('Anda harus mengatur nama di profil Anda terlebih dahulu sebelum membalas.');
+             openProfileEditor("");
+             return;
+        }
+        if (!body) { alert('Isi balasan wajib diisi.'); return; }
+        
         getOrCreateUserProfile(name);
         
         const reply = { id: Date.now().toString(), authorId: null, authorName: name, body, created: new Date().toISOString(), replies: [], votes: 0, parentId: null };
         t.replies.push(reply);  
         saveData(data);  
         renderReplies(t);  
-        
-        // document.getElementById('reply-name').value = ''; // Jangan hapus nama
         document.getElementById('reply-body').value = '';
       }
     }
@@ -770,12 +779,10 @@
       const root = document.getElementById('replies-root'); root.innerHTML = '';
       function renderList(list, container, depth) {
         list.forEach(r => {
-          // --- TAMBAHAN: Ambil profil dan render avatar ---
           const user = getOrCreateUserProfile(r.authorName);
-          const avatarHtml = renderAvatar(user, 28); // Avatar kecil
+          const avatarHtml = renderAvatar(user, 28);
 
           const rep = document.createElement('div'); rep.className = 'reply'; rep.style.marginLeft = (depth * 15) + 'px';
-          // --- MODIFIKASI: Tambahkan avatar di balasan ---
           rep.innerHTML = `
           <div style="display:flex; gap: 8px; align-items:flex-start;">
               <div class="avatar-wrapper" data-name="${escapeHtml(r.authorName)}" style="cursor:pointer; margin-top: 2px;" title="Lihat profil ${escapeHtml(r.authorName)}">
@@ -799,7 +806,6 @@
           </div>`;
           container.appendChild(rep);
 
-          // --- TAMBAHAN: Listener untuk lihat profil di balasan ---
           rep.querySelector('.avatar-wrapper').onclick = () => openProfileViewer(r.authorName);
           rep.querySelector('.author-name').onclick = () => openProfileViewer(r.authorName);
 
@@ -809,10 +815,11 @@
             if (existingBox) { existingBox.remove(); return; }  
 
             const box = document.createElement('div'); box.className = 'reply-box'; box.style.marginTop = '8px';
-            // --- TAMBAHAN: Isi nama terakhir di form balasan-balasan ---
+            
+            // --- MODIFIKASI: Input nama readonly ---
             const currentName = localStorage.getItem('obrolin_last_user') || '';
             box.innerHTML = `
-              <input type="text" value="${escapeHtml(currentName)}" placeholder="Nama Anda..." style="width:100%; padding: 8px; border-radius: 8px; border: 1px solid var(--border); background: var(--card); color: var(--text); margin-bottom: 6px; box-sizing: border-box;" />
+              <input type="text" value="${escapeHtml(currentName)}" readonly style="width:100%; padding: 8px; border-radius: 8px; border: 1px solid var(--border); background: var(--card); color: var(--muted); margin-bottom: 6px; box-sizing: border-box;" />
               <textarea placeholder="Balas..." style="width:100%;min-height:60px; padding:8px;"></textarea>
               <div style="display:flex;justify-content:flex-end;margin-top:6px"><button class="btn small">Kirim</button></div>`;
             rep.appendChild(box);
@@ -820,10 +827,14 @@
             box.querySelector('button').onclick = () => {
               const name = box.querySelector('input[type="text"]').value.trim();
               const txt = box.querySelector('textarea').value.trim();  
-              if (!name || !txt) { alert('Nama dan balasan wajib diisi.'); return; }
               
-              // --- TAMBAHAN: Simpan nama & pastikan profil ada ---
-              localStorage.setItem('obrolin_last_user', name);
+              if (!name) { 
+                  alert('Anda harus mengatur nama di profil Anda terlebih dahulu.'); 
+                  openProfileEditor("");
+                  return; 
+              }
+              if (!txt) { alert('Balasan wajib diisi.'); return; }
+              
               getOrCreateUserProfile(name);
               
               const newR = { id: Date.now().toString(), authorId: null, authorName: name, body: txt, created: new Date().toISOString(), replies: [], votes: 0, parentId: r.id };
@@ -852,18 +863,26 @@
     // ===== bootstrap (MODIFIKASI) =====
     document.getElementById('new-thread-btn').onclick = () => { window.scrollTo({ top: 0, behavior: 'smooth' }); document.getElementById('thread-title').focus(); }
     
-    // --- TAMBAHAN: Event listener untuk tombol "Profil Saya" ---
+    // --- MODIFIKASI: Logika Tombol "Profil Saya" ---
     document.getElementById('my-profile-btn').onclick = () => {
-        // Ambil nama dari user terakhir yg tersimpan
-        const name = localStorage.getItem('obrolin_last_user');
+        let name = localStorage.getItem('obrolin_last_user');
+        
         if (name) {
             openProfileEditor(name);
         } else {
-            // Jika belum ada, minta nama
-            const newName = prompt("Masukkan nama Anda untuk membuat profil:");
-            if (newName) {
-                localStorage.setItem('obrolin_last_user', newName);
-                openProfileEditor(newName);
+            // Jika belum ada nama, minta nama dulu
+            const newName = prompt("Selamat datang! Silakan masukkan nama Anda untuk membuat profil:");
+            if (newName && newName.trim()) {
+                // Cek apakah nama sudah dipakai
+                if (data.users.find(u => u.name.toLowerCase() === newName.trim().toLowerCase())) {
+                    alert('Nama tersebut sudah dipakai. Silakan coba lagi dengan nama lain.');
+                    return;
+                }
+                // Nama baru, simpan dan buka editor
+                localStorage.setItem('obrolin_last_user', newName.trim());
+                getOrCreateUserProfile(newName.trim()); // Buat profilnya
+                openProfileEditor(newName.trim());
+                renderComposer(); // Update composer
             }
         }
     };
