@@ -136,13 +136,10 @@
       background: var(--border); display: flex; align-items: center;  
       justify-content: center; color: var(--muted); font-weight: 700;
     }
-    
-    /* NOTIFIKASI DIHAPUS, TAPI STYLING BISA DIBIARKAN KARENA TIDAK MENGGANGGU */
     .notif-badge {  
       background: #ef4444; color: white; border-radius: 10px;  
       padding: 4px 6px; font-size: 12px;
     }
-    
     .modal-backdrop {  
       position: fixed; inset: 0;  
       background: rgba(2, 6, 23, 0.45);  
@@ -238,20 +235,24 @@
     const htmlEl = document.documentElement; // Akses elemen <html>
     
     // ======= Simple local-storage forum implementation =======
-    const DEFAULT_CATS = ['Teknologi', 'Lifestyle', 'Edukasi', 'Hiburan', 'Umum'];
+    
+    // --- INI ADALAH BARIS YANG DIUBAH ---
+    const DEFAULT_CATS = [
+      'Teknologi', 'Hiburan', 'Umum', 
+      'Matematika', 'Biologi', 'Ekonomi', 'Fisika', 
+      'Bahasa Inggris', 'Kimia', 'PP', 'Sejarah'
+    ];
+    // ------------------------------------
 
     function loadData() {
       const raw = localStorage.getItem('obrolin_data');
       if (raw) return JSON.parse(raw);
-      // Array 'users' dan 'notifications' tetap ada di data, tapi tidak akan kita gunakan lagi
       const data = { users: [], threads: [], notifications: [] };
       return data;
     }
     function saveData(d) { localStorage.setItem('obrolin_data', JSON.stringify(d)); }
 
     let data = loadData();
-    // 2. currentUser DIHAPUS
-    // let currentUser = JSON.parse(localStorage.getItem('obrolin_currentUser') || 'null');
     const modalRoot = document.getElementById('modal-root');
 
     // ===== UI helpers =====
@@ -281,10 +282,6 @@
       applyTheme();
     };
 
-    // 2. ===== Auth (SEBANYAK INI DIHAPUS) =====
-    // function renderTopProfile() { ... }
-    // function openAuthModal() { ... }
-
     // ===== Modal helpers =====
     function showModal(inner) {
       modalRoot.innerHTML = `<div class="modal-backdrop">${inner}</div>`;
@@ -304,12 +301,10 @@
 
     // ===== composer =====
     function renderComposer() {
-      // 2. Avatar composer dihapus
-      // document.getElementById('composer-avatar').textContent = ...
       const sel = document.getElementById('thread-category'); sel.innerHTML = ''; DEFAULT_CATS.forEach(c => { const opt = document.createElement('option'); opt.value = c; opt.textContent = c; sel.appendChild(opt); });
       document.getElementById('post-thread').onclick = postThread;
       document.getElementById('clear-thread').onclick = () => { 
-        document.getElementById('composer-name').value = ''; // 3. Bersihkan nama juga
+        document.getElementById('composer-name').value = ''; 
         document.getElementById('thread-title').value = ''; 
         document.getElementById('thread-body').value = ''; 
         document.getElementById('thread-media-url').value = ''; 
@@ -317,17 +312,12 @@
     }
 
     function postThread() {
-      // 2. Pengecekan currentUser dihapus
-      // if (!currentUser) { openAuthModal(); return; }
-      
-      // 3. Ambil nilai dari input nama
       const name = document.getElementById('composer-name').value.trim();
       const title = document.getElementById('thread-title').value.trim();
       const body = document.getElementById('thread-body').value.trim();
       const category = document.getElementById('thread-category').value;
       const mediaUrl = document.getElementById('thread-media-url').value.trim();  
       
-      // 3. Tambahkan validasi nama
       if (!name || !title || !body) { alert('Nama, Judul, dan isi thread wajib diisi.'); return; }
       
       const thread = {  
@@ -336,8 +326,7 @@
         body,  
         category,  
         mediaUrl: mediaUrl,  
-        // 2. authorId dihapus
-        authorName: name, // 3. authorName diambil dari input
+        authorName: name, 
         created: new Date().toISOString(),  
         votes: 0,  
         replies: []  
@@ -346,14 +335,13 @@
       data.threads.unshift(thread);  
       saveData(data);  
       renderThreads();  
-      // 3. Bersihkan nama setelah posting
       document.getElementById('composer-name').value = '';  
       document.getElementById('thread-title').value = '';  
       document.getElementById('thread-body').value = '';
       document.getElementById('thread-media-url').value = '';  
     }
     
-    // HELPER: Untuk membuat elemen media berdasarkan URL (Tetap sama)
+    // HELPER: Untuk membuat elemen media berdasarkan URL
     function createMediaElement(url) {
         if (!url) return '';
         const ext = url.split('.').pop().toLowerCase().split('?')[0];  
@@ -410,15 +398,12 @@
         `);
         list.appendChild(item);
         
-        // Attach dynamic listeners
         item.querySelector('[data-action=open]').onclick = () => openThread(t.id);
         item.querySelector('[data-action=share]').onclick = () => { navigator.clipboard?.writeText(window.location.href + '#t=' + t.id).then(() => alert('Link disalin ke clipboard')) }
         
         item.querySelector('.up').onclick = () => { t.votes++; item.querySelector('.votes-count').textContent = t.votes; saveData(data); };
         item.querySelector('.down').onclick = () => { t.votes--; item.querySelector('.votes-count').textContent = t.votes; saveData(data); };
       });
-      // 4. Update notif UI dihapus
-      // updateNotifUI();
     }
 
     function openThread(id) {
@@ -462,24 +447,15 @@
       renderReplies(t);
       document.getElementById('close-thread').onclick = closeModal;
       document.getElementById('post-reply').onclick = () => {
-        // 2. Pengecekan currentUser dihapus
-        // if (!currentUser) { closeModal(); openAuthModal(); return; }
-        
-        // 3. Ambil nama dan validasi
         const name = document.getElementById('reply-name').value.trim();
         const body = document.getElementById('reply-body').value.trim(); 
         if (!name || !body) { alert('Nama dan isi balasan wajib diisi.'); return; }
         
-        // 3. Buat objek balasan baru dengan nama
         const reply = { id: Date.now().toString(), authorId: null, authorName: name, body, created: new Date().toISOString(), replies: [], votes: 0, parentId: null };
         t.replies.push(reply); 
         saveData(data); 
         renderReplies(t); 
-        // 4. Notifikasi dihapus
-        // notifyAuthorIfNeeded(t, reply); 
-        // updateNotifUI(); 
         
-        // 3. Bersihkan input nama dan body
         document.getElementById('reply-name').value = '';
         document.getElementById('reply-body').value = '';
       }
@@ -495,13 +471,10 @@
 
           // Reply action handler
           rep.querySelector('[data-action=reply]').onclick = () => {
-            // 2. Pengecekan currentUser dihapus
-            // if (!currentUser) { alert('Silakan masuk untuk membalas.'); return; }
             const existingBox = rep.querySelector('.reply-box');
-            if (existingBox) { existingBox.remove(); return; } // Toggle close
+            if (existingBox) { existingBox.remove(); return; } 
 
             const box = document.createElement('div'); box.className = 'reply-box'; box.style.marginTop = '8px';
-            // 3. Tambahkan input nama di balasan beruntun (nested reply)
             box.innerHTML = `
               <input type="text" placeholder="Nama Anda..." style="width:100%; padding: 8px; border-radius: 8px; border: 1px solid var(--border); background: var(--card); color: var(--text); margin-bottom: 6px; box-sizing: border-box;" />
               <textarea placeholder="Balas..." style="width:100%;min-height:60px; padding:8px;"></textarea>
@@ -509,19 +482,14 @@
             rep.appendChild(box);
 
             box.querySelector('button').onclick = () => {
-              // 3. Ambil nama dan validasi
               const name = box.querySelector('input[type="text"]').value.trim();
               const txt = box.querySelector('textarea').value.trim(); 
               if (!name || !txt) { alert('Nama dan balasan wajib diisi.'); return; }
               
-              // 3. Buat objek balasan baru
               const newR = { id: Date.now().toString(), authorId: null, authorName: name, body: txt, created: new Date().toISOString(), replies: [], votes: 0, parentId: r.id };
               r.replies.push(newR); 
               saveData(data); 
               renderReplies(thread); 
-              // 4. Notifikasi dihapus
-              // notifyAuthorIfNeeded(thread, newR); 
-              // updateNotifUI();
             }
           }
 
@@ -537,28 +505,16 @@
       renderList(thread.replies, root, 0);
     }
 
-
-    // 4. ===== notifications (DIHAPUS SEMUA) =====
-    // function notifyAuthorIfNeeded(thread, reply) { ... }
-    // function updateNotifUI() { ... }
-    // function openNotifPanel() { ... }
-
     // ===== utilities =====
     function escapeHtml(s) { if (!s) return ''; return s.replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;').replaceAll('"', '&quot;').replaceAll("'", '&#039;'); }
     function truncate(s, n) { return s.length > n ? s.slice(0, n - 1) + '…' : s; }
 
     // ===== bootstrap =====
     document.getElementById('new-thread-btn').onclick = () => { window.scrollTo({ top: 0, behavior: 'smooth' }); document.getElementById('thread-title').focus(); }
-    // 4. Notif-count dihapus
-    // document.getElementById('notif-count').textContent = '';
     
-    // 2. renderTopProfile() dihapus
-    // renderTopProfile();  
     renderComposer();  
     renderCategories();  
     renderThreads();  
-    // 4. updateNotifUI() dihapus
-    // updateNotifUI();
 
     // Provide deep-link support: #t=threadid
     if (window.location.hash.startsWith('#t=')) { const id = window.location.hash.split('=')[1]; setTimeout(() => openThread(id), 600); }
