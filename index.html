@@ -7,10 +7,13 @@
   <meta name="description" content="Platform umum untuk siswa berdiskusi tentang mata pelajaran dan tugas." />
 
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+  
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
   <style>
     :root{
       --bg: #f7f7fb;
+      --bg-gradient-end: #eef6fb; /* Perbaikan: Variabel untuk gradient */
       --card: #ffffff;
       --muted: #6b7280;
       --text: #0f1724;
@@ -23,15 +26,16 @@
       --input-bg: transparent;
     }
     [data-theme="dark"]{
-      --bg: #0f172a; /* Diperbarui */
-      --card: #1e293b; /* Diperbarui */
-      --muted: #94a3b8; /* Diperbarui */
-      --text: #e2e8f0; /* Diperbarui */
+      --bg: #0f172a;
+      --bg-gradient-end: #0f172a; /* Perbaikan: Set gradient akhir ke warna bg di dark mode */
+      --card: #1e293b;
+      --muted: #94a3b8;
+      --text: #e2e8f0;
       --accent: #06b6d4;
-      --accent-contrast: #ffffff; /* Diperbarui */
-      --shadow: 0 6px 18px rgba(0,0,0,0.2); /* Diperbarui (lebih lembut) */
-      --border: rgba(255,255,255,0.1); /* Diperbarui */
-      --input-bg: rgba(255,255,255,0.03); /* Diperbarui */
+      --accent-contrast: #ffffff;
+      --shadow: 0 6px 18px rgba(0,0,0,0.2);
+      --border: rgba(255,255,255,0.1);
+      --input-bg: rgba(255,255,255,0.03);
     }
 
     *{box-sizing: border-box}
@@ -39,11 +43,13 @@
     body{
       margin:0;
       font-family: "Inter", system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
-      background: linear-gradient(180deg,var(--bg), #eef6fb 200px);
+      /* Perbaikan: Menggunakan variabel untuk gradient */
+      background: linear-gradient(180deg,var(--bg), var(--bg-gradient-end) 200px);
       color:var(--text);
       -webkit-font-smoothing:antialiased;
       -moz-osx-font-smoothing:grayscale;
       padding:28px;
+      transition: background 0.2s ease, color 0.2s ease; /* Transisi halus */
     }
 
     .container{
@@ -86,8 +92,10 @@
     .cat-btn{
       text-align:left;padding:8px 10px;border-radius:8px;border:1px solid transparent;
       background:transparent;color:var(--text);cursor:pointer;font-weight:600;
+      transition: background 0.15s ease, color 0.15s ease;
     }
     .cat-btn:hover{background:rgba(0,0,0,0.03)}
+    [data-theme="dark"] .cat-btn:hover{background:rgba(255,255,255,0.05)}
     .cat-btn.active{background:linear-gradient(90deg,var(--accent), #60a5fa);color:var(--accent-contrast);border-color:rgba(0,0,0,0.05)}
 
     .theme-toggle{
@@ -97,10 +105,10 @@
     .btn{
       display:inline-flex;align-items:center;gap:8px;padding:8px 12px;border-radius:10px;border:0;background:var(--accent);color:var(--accent-contrast);cursor:pointer;font-weight:600;
       box-shadow: none;
+      transition: background 0.15s ease, opacity 0.15s ease;
     }
     .btn:disabled{opacity: 0.7; cursor: wait;}
-    .btn.ghost{background:transparent;border:1px solid var(--border);color:var(--text)} /* Diperbarui */
-    .muted{color:var(--muted);font-size:13px}
+    .btn.ghost{background:transparent;border:1px solid var(--border);color:var(--text)}
 
     /* Main content */
     .main{
@@ -117,8 +125,14 @@
     .compose h2{margin:0 0 8px}
     .compose form{display:grid;gap:8px}
     .input, textarea, select{
-      width:100%;padding:10px;border-radius:8px;border:1px solid var(--border); /* Diperbarui */
-      font-size:14px;background:var(--input-bg);color:var(--text) /* Diperbarui */
+      width:100%;padding:10px;border-radius:8px;border:1px solid var(--border);
+      font-size:14px;background:var(--input-bg);color:var(--text);
+      transition: border-color 0.15s ease, box-shadow 0.15s ease;
+    }
+    .input:focus, textarea:focus, select:focus{
+      outline: none;
+      border-color: var(--accent);
+      box-shadow: 0 0 0 2px var(--accent);
     }
     textarea{min-height:100px;resize:vertical}
     .row{display:flex;gap:8px}
@@ -129,17 +143,18 @@
 
     .searchbar{display:flex;gap:8px;margin-bottom:12px}
     .searchbar input{
-      flex:1;padding:10px;border-radius:8px;
-      border:1px solid var(--border); /* Diperbarui */
-      background: var(--input-bg); /* Diperbarui */
-      color: var(--text); /* Diperbarui */
-      font-size:14px; /* Diperbarui */
+      flex:1;
+    }
+    /* Perbaikan: Atur lebar select via CSS, bukan inline style */
+    .searchbar select{
+      width: 180px;
+      flex-shrink: 0;
     }
 
     /* posts */
     .posts {display:grid;gap:12px}
     .post{
-      padding:14px;border-radius:12px;border:1px solid var(--border); /* Diperbarui */
+      padding:14px;border-radius:12px;border:1px solid var(--border);
       transition:transform .12s ease;
     }
     .post:hover{transform:translateY(-4px)}
@@ -151,7 +166,7 @@
     .post .post-tags .tag{cursor:pointer;padding:6px 8px;border-radius:999px;background:rgba(0,0,0,0.03);font-size:13px}
     .post .actions{display:flex;gap:8px;justify-content:flex-end;margin-top:12px;}
 
-    /* === Perbaikan: CSS untuk Balasan === */
+    /* CSS untuk Balasan */
     .replies-section{
       margin-top: 16px;
       padding-top: 12px;
@@ -174,16 +189,25 @@
       display: grid;
       gap: 8px;
     }
-    /* === Akhir Perbaikan === */
-
 
     footer.small{font-size:12px;color:var(--muted);text-align:center;margin-top:18px}
 
     /* responsive */
     @media (max-width:920px){
-      body{padding:14px} /* Diperbarui */
-      .container{grid-template-columns: 1fr;} /* Diperbarui */
+      body{padding:14px}
+      .container{grid-template-columns: 1fr;}
       .sidebar{position:relative;top:auto}
+      
+      /* Perbaikan: Stack form compose dan searchbar di mobile */
+      .row { 
+        flex-direction: column; 
+      }
+      .searchbar { 
+        flex-direction: column; 
+      }
+      .searchbar select {
+        width: 100%; /* Select jadi full-width */
+      }
     }
   </style>
 </head>
@@ -217,7 +241,7 @@
         </div>
       </div>
       <div style="margin-top:12px">
-        <button id="clearStorage" class="btn ghost" title="Hapus semua data lokal">Hapus data lokal</button>
+        <button id="clearStorage" class="btn ghost" title="Hapus data tema">Hapus data tema</button>
       </div>
     </aside>
 
@@ -252,17 +276,20 @@
 
         <div class="searchbar">
           <input id="searchInput" placeholder="Cari judul, isi, atau tag..." aria-label="Cari topik" />
-          <select id="sortSelect" class="input" style="width:180px">
+          <select id="sortSelect" class="input">
             <option value="new">Terbaru</option>
             <option value="old">Terlama</option>
           </select>
         </div>
 
         <div class="posts" id="postsContainer" aria-live="polite">
+          <div class="post card">
+            <div class="muted">Memuat topik dari database...</div>
           </div>
+        </div>
 
         <footer class="small card" style="margin-top:12px; margin-bottom:0;">
-          Forum BarBar — Belajar bareng itu asik! (Data disimpan hanya di browser Anda)
+          Forum BarBar — Belajar bareng itu asik! (Data via Supabase)
         </footer>
       </section>
     </main>
@@ -270,36 +297,33 @@
 
   <script>
     /******************************
-     * Forum BarBar — Client-side
+     * Forum BarBar — Supabase Client
      ******************************/
     (function(){
-      const DEFAULT_POSTS = [
-        {
-          id: genId(),
-          title: "Bantuan: Integral tak tentu — metode substitusi?",
-          body: "Saya stuck di integral ∫ (2x) * sqrt(1+x^2) dx. Bagaimana langkah substitusinya?",
-          category: "Matematika",
-          tags: ["integral","kalkulus","matematika"],
-          createdAt: Date.now() - 1000*60*60*24,
-          replies: [] /* Perbaikan: Menambahkan array replies */
-        },
-        {
-          id: genId(),
-          title: "Percobaan sains: Cara membuat percobaan reaksi asam-basa sederhana",
-          body: "Siapa punya ide percobaan sederhana yang aman untuk kelas? Bahan terbatas: cuka, baking soda, indikator alami.",
-          category: "Sains",
-          tags: ["kimia","percobaan","asambasa"],
-          createdAt: Date.now() - 1000*60*60*10,
-          replies: [ /* Perbaikan: Menambahkan array replies */
-            { id: genId(), body: "Bisa pakai ekstrak kunyit atau kol ungu sebagai indikator alami!", createdAt: Date.now() - 1000*60*60*9 }
-          ]
-        }
-      ];
+      
+      // === Konfigurasi Supabase ===
+      // Ganti dengan URL dan Anon Key Anda dari dashboard Supabase
+      const SUPABASE_URL = 'YOUR_SUPABASE_URL';
+      const SUPABASE_ANON_KEY = 'YOUR_SUPABASE_ANON_KEY';
+
+      // Cek jika variabel environment tidak diisi
+      if(SUPABASE_URL === 'YOUR_SUPABASE_URL' || SUPABASE_ANON_KEY === 'YOUR_SUPABASE_ANON_KEY') {
+        console.warn('Supabase URL/Key belum diatur. Silakan update di dalam <script>.');
+        // Tampilkan pesan di UI
+        document.getElementById('postsContainer').innerHTML = `
+          <div class="post card" style="border-color: var(--danger); background: rgba(239, 68, 68, 0.1);">
+            <h3 style="color:var(--danger); margin:0">Koneksi Database Gagal</h3>
+            <p style="color:var(--muted)">Konfigurasi Supabase (URL/Key) belum diatur di dalam file HTML.</p>
+          </div>`;
+      }
+
+      const { createClient } = supabase;
+      const db = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+      
+      // === Akhir Konfigurasi ===
+
 
       const CATEGORIES = ["Semua","Matematika","Sains","Bahasa","Sejarah","Lainnya"];
-
-      // localStorage keys
-      const LS_POSTS = 'forumbarbar_posts_v1';
       const LS_THEME = 'forumbarbar_theme_v1';
 
       // DOM
@@ -319,59 +343,64 @@
       const clearStorageBtn = document.getElementById('clearStorage');
 
       // state
-      let posts = loadPosts();
+      let posts = []; // Data sekarang diambil dari DB
       let activeCategory = "Semua";
       let activeTag = null;
 
       // init
-      renderCategoryButtons();
-      renderPopularTags();
-      applySavedTheme();
-      renderPosts();
-
-      // events
-      submitPostBtn.addEventListener('click', handleSubmit);
-      searchInput.addEventListener('input', debounce(renderPosts, 250));
-      sortSelect.addEventListener('change', renderPosts);
-      themeBtn.addEventListener('click', toggleTheme);
-      clearStorageBtn.addEventListener('click', () => {
-        if(!confirm('Hapus semua data lokal (post & theme)?')) return;
-        localStorage.removeItem(LS_POSTS);
-        localStorage.removeItem(LS_THEME);
-        posts = loadPosts();
+      initializeApp();
+      
+      async function initializeApp() {
+        renderCategoryButtons();
         applySavedTheme();
-        renderPosts();
-      });
+        
+        // Setup event listeners
+        submitPostBtn.addEventListener('click', handleSubmit);
+        searchInput.addEventListener('input', debounce(() => renderPosts(), 250)); // Cukup render ulang, tak perlu fetch
+        sortSelect.addEventListener('change', () => renderPosts()); // Cukup render ulang
+        themeBtn.addEventListener('click', toggleTheme);
+        clearStorageBtn.addEventListener('click', () => {
+          if(!confirm('Hapus data tema? (Data postingan ada di database)')) return;
+          localStorage.removeItem(LS_THEME);
+          applySavedTheme();
+        });
 
-      // functions
-      function loadPosts(){
-        try{
-          const raw = localStorage.getItem(LS_POSTS);
-          if(raw) return JSON.parse(raw);
-        }catch(e){}
-        localStorage.setItem(LS_POSTS, JSON.stringify(DEFAULT_POSTS));
-        return DEFAULT_POSTS.slice();
+        // Ambil data awal
+        await fetchAndRenderPosts();
+        
+        // Coba buka hash setelah data dimuat
+        tryOpenHash();
       }
 
-      function savePosts(){
-        localStorage.setItem(LS_POSTS, JSON.stringify(posts));
-      }
+      // Perbaikan: Fungsi baru untuk mengambil data dari Supabase
+      async function fetchAndRenderPosts() {
+        const ascending = sortSelect.value === 'old';
+        
+        // Ambil post DAN balasan terkait (replies) dalam satu query
+        const { data, error } = await db
+          .from('posts')
+          .select('*, replies (*)')
+          .order('created_at', { ascending: ascending });
 
-      function genId(){
-        // Perbaikan: Gunakan crypto.randomUUID jika ada
-        if(self.crypto && self.crypto.randomUUID){
-          return self.crypto.randomUUID();
+        if(error) {
+          console.error('Error fetching posts:', error.message);
+          postsContainer.innerHTML = `<div class="post card muted">Gagal memuat data: ${error.message}</div>`;
+          return;
         }
-        return 'p_' + Math.random().toString(36).slice(2,9);
+        
+        posts = data || [];
+        renderPosts(); // Panggil renderPosts setelah data di-fetch
+        renderPopularTags(); // Update tag populer
       }
 
+      // Perbaikan: genId() tidak diperlukan lagi, Supabase akan generate UUID
+      
       function normalizeTagText(text){
         return text.replace(/^[#]+/,'').toLowerCase().trim();
       }
 
       function parseTags(input){
         if(!input) return [];
-        // split by comma or space, remove empty, normalize #
         return input.split(/[,\\s]+/).map(t => normalizeTagText(t)).filter(Boolean);
       }
 
@@ -384,11 +413,9 @@
           btn.type = 'button';
           btn.addEventListener('click', () => {
             activeCategory = cat;
-            // clear tag filter when changing category
             activeTag = null;
             updateCategoryActiveStates();
-            renderPopularTags();
-            renderPosts();
+            renderPosts(); // Cukup render ulang, tak perlu fetch
           });
           categoryListEl.appendChild(btn);
         });
@@ -403,7 +430,6 @@
       function computePopularTags(){
         const counter = {};
         posts.forEach(p => p.tags.forEach(t => counter[t] = (counter[t]||0)+1));
-        // sort by count desc and return top 12
         return Object.keys(counter).sort((a,b)=>counter[b]-counter[a]).slice(0,12);
       }
 
@@ -411,7 +437,7 @@
         popularTagsEl.innerHTML = '';
         const tags = computePopularTags();
         if(!tags.length){
-          popularTagsEl.innerHTML = '<div class="muted">Belum ada tag populer — buat topik untuk memulai.</div>';
+          popularTagsEl.innerHTML = '<div class="muted">Belum ada tag populer.</div>';
           return;
         }
         tags.forEach(t => {
@@ -421,15 +447,16 @@
           el.title = 'Filter tag #'+t;
           el.addEventListener('click', () => {
             activeTag = t;
-            // set category to Semua to show any category
             activeCategory = 'Semua';
             updateCategoryActiveStates();
-            renderPosts();
+            renderPosts(); // Cukup render ulang
           });
           popularTagsEl.appendChild(el);
         });
       }
 
+      // renderPosts sekarang HANYA me-render state 'posts' saat ini.
+      // Filtering tidak perlu fetch ulang dari DB.
       function renderPosts(){
         const q = (searchInput.value||'').toLowerCase().trim();
         let list = posts.slice();
@@ -452,13 +479,23 @@
             p.tags.some(t => t.includes(q.replace(/^#/,'')))
           );
         }
-
-        // Sort
-        if(sortSelect.value === 'new'){
-          list.sort((a,b)=> b.createdAt - a.createdAt);
+        
+        // Sorting sudah ditangani oleh fetchAndRenderPosts saat query.
+        // Tapi jika user mengubah sort, kita harus fetch ulang.
+        // Mari kita ubah: sortSelect.onChange harus fetch ulang.
+        
+        // --- Koreksi alur ---
+        // sortSelect.removeEventListener('change', () => renderPosts());
+        // sortSelect.addEventListener('change', fetchAndRenderPosts);
+        // ...
+        // Oke, untuk sekarang, kita biarkan sort client-side agar simpel
+        // dan sesuai dengan alur kode asli.
+        if (sortSelect.value === 'new') {
+           list.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
         } else {
-          list.sort((a,b)=> a.createdAt - b.createdAt);
+           list.sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
         }
+        // --- Akhir koreksi alur ---
 
         // render
         postsContainer.innerHTML = '';
@@ -472,37 +509,37 @@
         }
 
         postCountEl.textContent = `${list.length} topik`;
-        renderPopularTags();
+        
+        // Jangan panggil renderPopularTags() di sini untuk menghindari loop
+        // renderPopularTags() dipanggil setelah fetch.
       }
       
-      // === Perbaikan: Fungsi baru untuk render balasan ===
+      // Fungsi untuk render balasan
       function renderReplies(post, container){
-        container.innerHTML = ''; // bersihkan balasan lama
+        container.innerHTML = '';
+        // 'post.replies' sudah otomatis terisi oleh query Supabase
         const replies = post.replies || [];
         if(!replies.length) return;
 
-        replies.sort((a,b) => a.createdAt - b.createdAt); // tampilkan dari terlama
+        replies.sort((a,b) => new Date(a.created_at) - new Date(b.created_at));
         
         replies.forEach(r => {
           const replyEl = document.createElement('div');
           replyEl.className = 'reply-card';
           replyEl.innerHTML = `
-            <div class="meta">${formatDate(new Date(r.createdAt))}</div>
+            <div class="meta">${formatDate(new Date(r.created_at))}</div>
             <div class="body">${escapeHtml(r.body)}</div>
           `;
-          // Di sini Anda bisa menambahkan tombol hapus balasan jika mau
           container.appendChild(replyEl);
         });
       }
-      // === Akhir Perbaikan ===
 
       function renderPostCard(p){
         const el = document.createElement('article');
         el.className = 'post card';
         el.setAttribute('data-id', p.id);
-        const date = new Date(p.createdAt);
+        const date = new Date(p.created_at); // Menggunakan created_at dari DB
 
-        // Perbaikan: Merombak struktur HTML kartu untuk menyertakan balasan
         el.innerHTML = `
           <div class="meta">
             <div class="cat" aria-hidden="true">${escapeHtml(p.category)}</div>
@@ -511,7 +548,6 @@
           <div class="title">${escapeHtml(p.title)}</div>
           <div class="body">${escapeHtml(p.body)}</div>
           <div class="post-tags"></div>
-
           <div class="replies-section"></div>
           
           <div class="actions">
@@ -525,11 +561,9 @@
           </form>
         `;
         
-        // --- Menambahkan event listener setelah innerHTML di-set ---
-
         // Render tags
         const tagsContainer = el.querySelector('.post-tags');
-        p.tags.forEach(t => {
+        (p.tags || []).forEach(t => {
           const tEl = document.createElement('div');
           tEl.className = 'tag';
           tEl.textContent = '#'+t;
@@ -543,7 +577,7 @@
           tagsContainer.appendChild(tEl);
         });
 
-        // Perbaikan: Render balasan yang sudah ada
+        // Render balasan yang sudah ada
         const repliesContainer = el.querySelector('.replies-section');
         renderReplies(p, repliesContainer);
 
@@ -558,16 +592,26 @@
           });
         });
 
-        // delete button
-        el.querySelector('.delBtn').addEventListener('click', () => {
+        // Perbaikan: delete button (async)
+        el.querySelector('.delBtn').addEventListener('click', async () => {
           if(!confirm('Hapus topik ini? Tindakan tidak bisa dibatalkan.')) return;
-          posts = posts.filter(x => x.id !== p.id);
-          savePosts();
-          renderPosts();
+          
+          const { error } = await db.from('posts').delete().match({ id: p.id });
+          
+          if(error) {
+            alert('Gagal menghapus post: ' + error.message);
+          } else {
+            // Optimis: hapus dari UI lokal & state
+            // posts = posts.filter(x => x.id !== p.id);
+            // renderPosts();
+            
+            // Pesimis (lebih aman): fetch ulang
+            await fetchAndRenderPosts();
+          }
         });
         
-        // Perbaikan: Event listener untuk form balasan
-        el.querySelector('.reply-form').addEventListener('submit', (e) => {
+        // Perbaikan: Event listener untuk form balasan (async)
+        el.querySelector('.reply-form').addEventListener('submit', async (e) => {
           e.preventDefault();
           const textarea = el.querySelector('.reply-form textarea');
           const replyBody = textarea.value.trim();
@@ -577,77 +621,76 @@
           }
           
           const newReply = {
-            id: genId(),
             body: replyBody,
-            createdAt: Date.now()
+            post_id: p.id // Foreign key ke post
+            // id dan created_at akan digenerate oleh Supabase
           };
-
-          // Objek 'p' adalah referensi, jadi kita bisa langsung modifikasi
-          p.replies = p.replies || [];
-          p.replies.push(newReply);
-          savePosts(); // Simpan array 'posts' yang sudah termodifikasi
           
-          // Render ulang hanya bagian balasan di kartu ini
-          renderReplies(p, repliesContainer);
-          textarea.value = ''; // Kosongkan form
+          const { data, error } = await db.from('replies').insert(newReply).select().single();
+
+          if (error) {
+            alert('Gagal mengirim balasan: ' + error.message);
+          } else {
+            // Sukses! Tambahkan balasan baru ke UI secara optimis
+            p.replies = p.replies || [];
+            p.replies.push(data);
+            renderReplies(p, repliesContainer);
+            textarea.value = '';
+          }
         });
 
         return el;
       }
 
+      // Perbaikan: handleSubmit (async)
       async function handleSubmit(){
         const title = postTitle.value.trim();
         const body = postBody.value.trim();
         const category = postCategory.value;
         const tags = parseTags(postTags.value);
 
-        if(!title){
-          alert('Masukkan judul topik.');
-          return;
-        }
-        // Perbaikan: Validasi isi topik
-        if(!body){
-          alert('Masukkan isi topik (penjelasan).');
+        if(!title || !body){
+          alert('Judul dan Isi topik tidak boleh kosong.');
           return;
         }
         
-        // Perbaikan: UX - nonaktifkan tombol
         submitPostBtn.disabled = true;
         submitPostBtn.textContent = 'Memposting...';
 
         const newPost = {
-          id: genId(),
           title,
           body,
           category,
           tags,
-          createdAt: Date.now(),
-          replies: [] // Perbaikan: Tambahkan array replies
+          // id dan created_at akan digenerate oleh Supabase
         };
-        posts.unshift(newPost);
-        savePosts();
         
-        // reset form
-        postTitle.value = '';
-        postBody.value = '';
-        postTags.value = '';
-        postCategory.value = 'Matematika';
-        
-        // reset active filters to show new post
-        activeCategory = 'Semua';
-        activeTag = null;
-        updateCategoryActiveStates();
-        renderPosts();
-        
-        // Perbaikan: UX - aktifkan tombol kembali
+        const { error } = await db.from('posts').insert(newPost);
+
         submitPostBtn.disabled = false;
         submitPostBtn.textContent = 'Posting';
 
-        // scroll to top
-        window.scrollTo({top:0, behavior:'smooth'});
+        if(error) {
+          alert('Gagal memposting: ' + error.message);
+        } else {
+          // Sukses, reset form
+          postTitle.value = '';
+          postBody.value = '';
+          postTags.value = '';
+          postCategory.value = 'Matematika';
+          
+          // reset filter dan fetch ulang data
+          activeCategory = 'Semua';
+          activeTag = null;
+          sortSelect.value = 'new'; // Tampilkan yang terbaru
+          updateCategoryActiveStates();
+          await fetchAndRenderPosts();
+          
+          window.scrollTo({top:0, behavior:'smooth'});
+        }
       }
 
-      // theme
+      // theme (tidak berubah)
       function applySavedTheme(){
         const saved = localStorage.getItem(LS_THEME);
         if(saved === 'dark'){
@@ -676,7 +719,7 @@
         }
       }
 
-      // helpers
+      // helpers (tidak berubah)
       function escapeHtml(text){
         if(!text) return '';
         return text
@@ -684,15 +727,15 @@
           .replace(/</g, "&lt;")
           .replace(/>/g, "&gt;")
           .replace(/"/g, "&quot;")
-          .replace(/'/g, "&#39;"); // Perbaikan: Tambahkan single quote
+          .replace(/'/g, "&#39;");
       }
 
       function formatDate(d){
-        // e.g. 19 Okt 2025, 14:30
         const opts = { day: '2-digit', month: 'short', year: 'numeric', hour:'2-digit', minute:'2-digit' };
         return new Intl.DateTimeFormat('id-ID', opts).format(d);
       }
 
+G
       function debounce(fn, wait){
         let t;
         return function(...a){
@@ -701,7 +744,6 @@
         }
       }
 
-      // support linking to specific post via hash
       function tryOpenHash(){
         const h = location.hash.replace('#','');
         if(!h) return;
@@ -710,18 +752,13 @@
         if(elem){
           elem.scrollIntoView({behavior:'smooth', block:'center'});
           elem.style.transition = 'box-shadow .2s ease, transform .2s ease';
-          // Perbaikan: Gunakan shadow yang lebih terlihat di mode gelap
           elem.style.boxShadow = '0 0 0 3px var(--accent)';
           setTimeout(()=> elem.style.boxShadow = '', 2000);
         }
       }
-
-      window.addEventListener('load', () => {
-        tryOpenHash();
-      });
-
+      
       // expose small debug (optional)
-      window.ForumBarBar = { posts, savePosts, renderPosts };
+      window.ForumBarBar = { posts, db, fetchAndRenderPosts };
 
     })();
   </script>
