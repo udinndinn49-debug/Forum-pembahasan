@@ -6,7 +6,6 @@
   <title>Forum BarBar — Forum Diskusi Orang BarBar</title>
   <meta name="description" content="Platform umum untuk siswa berdiskusi tentang mata pelajaran dan tugas." />
 
-  <!-- Font (opsional) -->
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
 
   <style>
@@ -20,15 +19,19 @@
       --danger: #ef4444;
       --shadow: 0 6px 18px rgba(12, 17, 23, 0.06);
       --radius: 12px;
+      --border: rgba(0,0,0,0.06);
+      --input-bg: transparent;
     }
     [data-theme="dark"]{
-      --bg: #071024;
-      --card: #07172a;
-      --muted: #9aa9bf;
-      --text: #e6eef8;
+      --bg: #0f172a; /* Diperbarui */
+      --card: #1e293b; /* Diperbarui */
+      --muted: #94a3b8; /* Diperbarui */
+      --text: #e2e8f0; /* Diperbarui */
       --accent: #06b6d4;
-      --accent-contrast: #07202a;
-      --shadow: 0 8px 24px rgba(0,0,0,0.6);
+      --accent-contrast: #ffffff; /* Diperbarui */
+      --shadow: 0 6px 18px rgba(0,0,0,0.2); /* Diperbarui (lebih lembut) */
+      --border: rgba(255,255,255,0.1); /* Diperbarui */
+      --input-bg: rgba(255,255,255,0.03); /* Diperbarui */
     }
 
     *{box-sizing: border-box}
@@ -95,7 +98,8 @@
       display:inline-flex;align-items:center;gap:8px;padding:8px 12px;border-radius:10px;border:0;background:var(--accent);color:var(--accent-contrast);cursor:pointer;font-weight:600;
       box-shadow: none;
     }
-    .btn.ghost{background:transparent;border:1px solid rgba(0,0,0,0.06);color:var(--text)}
+    .btn:disabled{opacity: 0.7; cursor: wait;}
+    .btn.ghost{background:transparent;border:1px solid var(--border);color:var(--text)} /* Diperbarui */
     .muted{color:var(--muted);font-size:13px}
 
     /* Main content */
@@ -113,8 +117,8 @@
     .compose h2{margin:0 0 8px}
     .compose form{display:grid;gap:8px}
     .input, textarea, select{
-      width:100%;padding:10px;border-radius:8px;border:1px solid rgba(0,0,0,0.06);
-      font-size:14px;background:transparent;color:var(--text)
+      width:100%;padding:10px;border-radius:8px;border:1px solid var(--border); /* Diperbarui */
+      font-size:14px;background:var(--input-bg);color:var(--text) /* Diperbarui */
     }
     textarea{min-height:100px;resize:vertical}
     .row{display:flex;gap:8px}
@@ -124,12 +128,18 @@
     .tag-pill:hover{opacity:0.85}
 
     .searchbar{display:flex;gap:8px;margin-bottom:12px}
-    .searchbar input{flex:1;padding:10px;border-radius:8px;border:1px solid rgba(0,0,0,0.06)}
+    .searchbar input{
+      flex:1;padding:10px;border-radius:8px;
+      border:1px solid var(--border); /* Diperbarui */
+      background: var(--input-bg); /* Diperbarui */
+      color: var(--text); /* Diperbarui */
+      font-size:14px; /* Diperbarui */
+    }
 
     /* posts */
     .posts {display:grid;gap:12px}
     .post{
-      padding:14px;border-radius:12px;border:1px solid rgba(0,0,0,0.04);
+      padding:14px;border-radius:12px;border:1px solid var(--border); /* Diperbarui */
       transition:transform .12s ease;
     }
     .post:hover{transform:translateY(-4px)}
@@ -139,13 +149,40 @@
     .post .body{color:var(--muted);font-size:14px;margin-bottom:8px;white-space:pre-wrap}
     .post .post-tags{display:flex;gap:8px;flex-wrap:wrap}
     .post .post-tags .tag{cursor:pointer;padding:6px 8px;border-radius:999px;background:rgba(0,0,0,0.03);font-size:13px}
-    .post .actions{display:flex;gap:8px;justify-content:flex-end;margin-top:8px}
+    .post .actions{display:flex;gap:8px;justify-content:flex-end;margin-top:12px;}
+
+    /* === Perbaikan: CSS untuk Balasan === */
+    .replies-section{
+      margin-top: 16px;
+      padding-top: 12px;
+      border-top: 1px dashed var(--border);
+    }
+    .reply-card{
+      background: var(--input-bg);
+      padding: 10px;
+      border-radius: 8px;
+      margin-bottom: 8px;
+      font-size: 14px;
+    }
+    .reply-card .meta{
+      font-size: 12px;
+      color: var(--muted);
+      margin-bottom: 4px;
+    }
+    .reply-form{
+      margin-top: 12px;
+      display: grid;
+      gap: 8px;
+    }
+    /* === Akhir Perbaikan === */
+
 
     footer.small{font-size:12px;color:var(--muted);text-align:center;margin-top:18px}
 
     /* responsive */
     @media (max-width:920px){
-      .container{grid-template-columns: 1fr; padding: 14px}
+      body{padding:14px} /* Diperbarui */
+      .container{grid-template-columns: 1fr;} /* Diperbarui */
       .sidebar{position:relative;top:auto}
     }
   </style>
@@ -164,15 +201,13 @@
       <div class="filter-group" aria-hidden="false">
         <h3>Kategori</h3>
         <div class="cat-list" id="categoryList">
-          <!-- buttons inserted by JS -->
-        </div>
+          </div>
       </div>
 
       <div class="filter-group">
         <h3>Tag populer</h3>
         <div id="popularTags" class="tags-list" aria-live="polite">
-          <!-- tags -->
-        </div>
+          </div>
       </div>
 
       <div class="theme-toggle">
@@ -190,8 +225,8 @@
       <section class="card compose" aria-labelledby="composeTitle">
         <h2 id="composeTitle">Buat Pertanyaan / Topik Baru</h2>
         <form id="composeForm" onsubmit="return false;">
-          <input id="postTitle" class="input" placeholder="Judul: Contoh — Soal kinematics kelas 10..." required />
-          <textarea id="postBody" placeholder="Jelaskan detail pertanyaan atau topik..." ></textarea>
+          <input id="postTitle" class="input" placeholder="Judul: Contoh — Soal kinematics kelas 10..." required aria-label="Judul Topik"/>
+          <textarea id="postBody" placeholder="Jelaskan detail pertanyaan atau topik..." required aria-label="Isi Topik"></textarea>
           <div class="row">
             <select id="postCategory" class="input" aria-label="Kategori">
               <option value="Matematika">Matematika</option>
@@ -200,7 +235,7 @@
               <option value="Sejarah">Sejarah</option>
               <option value="Lainnya">Lainnya</option>
             </select>
-            <input id="postTags" class="input" placeholder="Tags (pisahkan spasi atau koma). contoh: #matematika integrals" />
+            <input id="postTags" class="input" placeholder="Tags (pisahkan spasi atau koma). contoh: #matematika integrals" aria-label="Tags Topik"/>
             <button id="submitPost" class="btn" type="button">Posting</button>
           </div>
           <div class="tags-list" id="composeHint">
@@ -224,10 +259,9 @@
         </div>
 
         <div class="posts" id="postsContainer" aria-live="polite">
-          <!-- posts go here -->
-        </div>
+          </div>
 
-        <footer class="small card" style="margin-top:12px">
+        <footer class="small card" style="margin-top:12px; margin-bottom:0;">
           Forum BarBar — Belajar bareng itu asik! (Data disimpan hanya di browser Anda)
         </footer>
       </section>
@@ -246,7 +280,8 @@
           body: "Saya stuck di integral ∫ (2x) * sqrt(1+x^2) dx. Bagaimana langkah substitusinya?",
           category: "Matematika",
           tags: ["integral","kalkulus","matematika"],
-          createdAt: Date.now() - 1000*60*60*24
+          createdAt: Date.now() - 1000*60*60*24,
+          replies: [] /* Perbaikan: Menambahkan array replies */
         },
         {
           id: genId(),
@@ -254,7 +289,10 @@
           body: "Siapa punya ide percobaan sederhana yang aman untuk kelas? Bahan terbatas: cuka, baking soda, indikator alami.",
           category: "Sains",
           tags: ["kimia","percobaan","asambasa"],
-          createdAt: Date.now() - 1000*60*60*10
+          createdAt: Date.now() - 1000*60*60*10,
+          replies: [ /* Perbaikan: Menambahkan array replies */
+            { id: genId(), body: "Bisa pakai ekstrak kunyit atau kol ungu sebagai indikator alami!", createdAt: Date.now() - 1000*60*60*9 }
+          ]
         }
       ];
 
@@ -320,6 +358,10 @@
       }
 
       function genId(){
+        // Perbaikan: Gunakan crypto.randomUUID jika ada
+        if(self.crypto && self.crypto.randomUUID){
+          return self.crypto.randomUUID();
+        }
         return 'p_' + Math.random().toString(36).slice(2,9);
       }
 
@@ -432,12 +474,35 @@
         postCountEl.textContent = `${list.length} topik`;
         renderPopularTags();
       }
+      
+      // === Perbaikan: Fungsi baru untuk render balasan ===
+      function renderReplies(post, container){
+        container.innerHTML = ''; // bersihkan balasan lama
+        const replies = post.replies || [];
+        if(!replies.length) return;
+
+        replies.sort((a,b) => a.createdAt - b.createdAt); // tampilkan dari terlama
+        
+        replies.forEach(r => {
+          const replyEl = document.createElement('div');
+          replyEl.className = 'reply-card';
+          replyEl.innerHTML = `
+            <div class="meta">${formatDate(new Date(r.createdAt))}</div>
+            <div class="body">${escapeHtml(r.body)}</div>
+          `;
+          // Di sini Anda bisa menambahkan tombol hapus balasan jika mau
+          container.appendChild(replyEl);
+        });
+      }
+      // === Akhir Perbaikan ===
 
       function renderPostCard(p){
         const el = document.createElement('article');
         el.className = 'post card';
         el.setAttribute('data-id', p.id);
         const date = new Date(p.createdAt);
+
+        // Perbaikan: Merombak struktur HTML kartu untuk menyertakan balasan
         el.innerHTML = `
           <div class="meta">
             <div class="cat" aria-hidden="true">${escapeHtml(p.category)}</div>
@@ -446,12 +511,23 @@
           <div class="title">${escapeHtml(p.title)}</div>
           <div class="body">${escapeHtml(p.body)}</div>
           <div class="post-tags"></div>
+
+          <div class="replies-section"></div>
+          
           <div class="actions">
             <button class="btn ghost shareBtn" title="Salin link topik">Salin Link</button>
             <button class="btn ghost delBtn" title="Hapus topik">Hapus</button>
           </div>
+
+          <form class="reply-form">
+            <textarea class="input" placeholder="Tulis balasan..." required aria-label="Tulis balasan untuk ${escapeHtml(p.title)}"></textarea>
+            <button type="submit" class="btn" style="justify-self:flex-end">Kirim Balasan</button>
+          </form>
         `;
-        // tags
+        
+        // --- Menambahkan event listener setelah innerHTML di-set ---
+
+        // Render tags
         const tagsContainer = el.querySelector('.post-tags');
         p.tags.forEach(t => {
           const tEl = document.createElement('div');
@@ -462,11 +538,14 @@
             activeCategory = 'Semua';
             updateCategoryActiveStates();
             renderPosts();
-            // smooth scroll to top to show filter
             window.scrollTo({top:0, behavior:'smooth'});
           });
           tagsContainer.appendChild(tEl);
         });
+
+        // Perbaikan: Render balasan yang sudah ada
+        const repliesContainer = el.querySelector('.replies-section');
+        renderReplies(p, repliesContainer);
 
         // share button
         el.querySelector('.shareBtn').addEventListener('click', () => {
@@ -486,11 +565,37 @@
           savePosts();
           renderPosts();
         });
+        
+        // Perbaikan: Event listener untuk form balasan
+        el.querySelector('.reply-form').addEventListener('submit', (e) => {
+          e.preventDefault();
+          const textarea = el.querySelector('.reply-form textarea');
+          const replyBody = textarea.value.trim();
+          if(!replyBody) {
+            alert('Balasan tidak boleh kosong.');
+            return;
+          }
+          
+          const newReply = {
+            id: genId(),
+            body: replyBody,
+            createdAt: Date.now()
+          };
+
+          // Objek 'p' adalah referensi, jadi kita bisa langsung modifikasi
+          p.replies = p.replies || [];
+          p.replies.push(newReply);
+          savePosts(); // Simpan array 'posts' yang sudah termodifikasi
+          
+          // Render ulang hanya bagian balasan di kartu ini
+          renderReplies(p, repliesContainer);
+          textarea.value = ''; // Kosongkan form
+        });
 
         return el;
       }
 
-      function handleSubmit(){
+      async function handleSubmit(){
         const title = postTitle.value.trim();
         const body = postBody.value.trim();
         const category = postCategory.value;
@@ -500,26 +605,44 @@
           alert('Masukkan judul topik.');
           return;
         }
+        // Perbaikan: Validasi isi topik
+        if(!body){
+          alert('Masukkan isi topik (penjelasan).');
+          return;
+        }
+        
+        // Perbaikan: UX - nonaktifkan tombol
+        submitPostBtn.disabled = true;
+        submitPostBtn.textContent = 'Memposting...';
+
         const newPost = {
           id: genId(),
           title,
           body,
           category,
           tags,
-          createdAt: Date.now()
+          createdAt: Date.now(),
+          replies: [] // Perbaikan: Tambahkan array replies
         };
         posts.unshift(newPost);
         savePosts();
+        
         // reset form
         postTitle.value = '';
         postBody.value = '';
         postTags.value = '';
         postCategory.value = 'Matematika';
+        
         // reset active filters to show new post
         activeCategory = 'Semua';
         activeTag = null;
         updateCategoryActiveStates();
         renderPosts();
+        
+        // Perbaikan: UX - aktifkan tombol kembali
+        submitPostBtn.disabled = false;
+        submitPostBtn.textContent = 'Posting';
+
         // scroll to top
         window.scrollTo({top:0, behavior:'smooth'});
       }
@@ -560,7 +683,8 @@
           .replace(/&/g, "&amp;")
           .replace(/</g, "&lt;")
           .replace(/>/g, "&gt;")
-          .replace(/"/g, "&quot;");
+          .replace(/"/g, "&quot;")
+          .replace(/'/g, "&#39;"); // Perbaikan: Tambahkan single quote
       }
 
       function formatDate(d){
@@ -581,18 +705,17 @@
       function tryOpenHash(){
         const h = location.hash.replace('#','');
         if(!h) return;
-        // try find post and scroll
+        
         const elem = document.querySelector(`[data-id="${h}"]`);
         if(elem){
           elem.scrollIntoView({behavior:'smooth', block:'center'});
-          // highlight briefly
           elem.style.transition = 'box-shadow .2s ease, transform .2s ease';
-          elem.style.boxShadow = '0 8px 30px rgba(99,102,241,0.15)';
-          setTimeout(()=> elem.style.boxShadow = '', 1600);
+          // Perbaikan: Gunakan shadow yang lebih terlihat di mode gelap
+          elem.style.boxShadow = '0 0 0 3px var(--accent)';
+          setTimeout(()=> elem.style.boxShadow = '', 2000);
         }
       }
 
-      // on load check hash after render
       window.addEventListener('load', () => {
         tryOpenHash();
       });
