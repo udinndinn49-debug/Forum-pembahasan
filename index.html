@@ -13,7 +13,7 @@
   <style>
     :root{
       --bg: #f7f7fb;
-      --bg-gradient-end: #eef6fb; /* Perbaikan: Variabel untuk gradient */
+      --bg-gradient-end: #eef6fb;
       --card: #ffffff;
       --muted: #6b7280;
       --text: #0f1724;
@@ -27,7 +27,7 @@
     }
     [data-theme="dark"]{
       --bg: #0f172a;
-      --bg-gradient-end: #0f172a; /* Perbaikan: Set gradient akhir ke warna bg di dark mode */
+      --bg-gradient-end: #0f172a;
       --card: #1e293b;
       --muted: #94a3b8;
       --text: #e2e8f0;
@@ -43,13 +43,12 @@
     body{
       margin:0;
       font-family: "Inter", system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
-      /* Perbaikan: Menggunakan variabel untuk gradient */
       background: linear-gradient(180deg,var(--bg), var(--bg-gradient-end) 200px);
       color:var(--text);
       -webkit-font-smoothing:antialiased;
       -moz-osx-font-smoothing:grayscale;
       padding:28px;
-      transition: background 0.2s ease, color 0.2s ease; /* Transisi halus */
+      transition: background 0.2s ease, color 0.2s ease;
     }
 
     .container{
@@ -145,7 +144,6 @@
     .searchbar input{
       flex:1;
     }
-    /* Perbaikan: Atur lebar select via CSS, bukan inline style */
     .searchbar select{
       width: 180px;
       flex-shrink: 0;
@@ -198,16 +196,9 @@
       .container{grid-template-columns: 1fr;}
       .sidebar{position:relative;top:auto}
       
-      /* Perbaikan: Stack form compose dan searchbar di mobile */
-      .row { 
-        flex-direction: column; 
-      }
-      .searchbar { 
-        flex-direction: column; 
-      }
-      .searchbar select {
-        width: 100%; /* Select jadi full-width */
-      }
+      .row { flex-direction: column; }
+      .searchbar { flex-direction: column; }
+      .searchbar select { width: 100%; }
     }
   </style>
 </head>
@@ -224,14 +215,12 @@
 
       <div class="filter-group" aria-hidden="false">
         <h3>Kategori</h3>
-        <div class="cat-list" id="categoryList">
-          </div>
+        <div class="cat-list" id="categoryList"></div>
       </div>
 
       <div class="filter-group">
         <h3>Tag populer</h3>
-        <div id="popularTags" class="tags-list" aria-live="polite">
-          </div>
+        <div id="popularTags" class="tags-list" aria-live="polite"></div>
       </div>
 
       <div class="theme-toggle">
@@ -249,21 +238,18 @@
       <section class="card compose" aria-labelledby="composeTitle">
         <h2 id="composeTitle">Buat Pertanyaan / Topik Baru</h2>
         <form id="composeForm" onsubmit="return false;">
-          <input id="postTitle" class="input" placeholder="Judul: Contoh — Soal kinematics kelas 10..." required aria-label="Judul Topik"/>
-          <textarea id="postBody" placeholder="Jelaskan detail pertanyaan atau topik..." required aria-label="Isi Topik"></textarea>
+          <input name="title" class="input" placeholder="Judul: Contoh — Soal kinematics kelas 10..." required aria-label="Judul Topik"/>
+          <textarea name="body" placeholder="Jelaskan detail pertanyaan atau topik..." required aria-label="Isi Topik"></textarea>
           <div class="row">
-            <select id="postCategory" class="input" aria-label="Kategori">
+            <select name="category" class="input" aria-label="Kategori">
               <option value="Matematika">Matematika</option>
               <option value="Sains">Sains</option>
               <option value="Bahasa">Bahasa</option>
               <option value="Sejarah">Sejarah</option>
               <option value="Lainnya">Lainnya</option>
             </select>
-            <input id="postTags" class="input" placeholder="Tags (pisahkan spasi atau koma). contoh: #matematika integrals" aria-label="Tags Topik"/>
-            <button id="submitPost" class="btn" type="button">Posting</button>
-          </div>
-          <div class="tags-list" id="composeHint">
-            <div class="muted">Tip: Gunakan tag untuk memudahkan pencarian — klik tag di post untuk filter.</div>
+            <input name="tags" class="input" placeholder="Tags (pisahkan koma). cth: fisika, integral" aria-label="Tags Topik"/>
+            <button id="submitPost" class="btn" type="submit">Posting</button>
           </div>
         </form>
       </section>
@@ -302,19 +288,17 @@
     (function(){
       
       // === Konfigurasi Supabase ===
-      // Ganti dengan URL dan Anon Key Anda dari dashboard Supabase
       const SUPABASE_URL = 'https://zisateevmyushnucnwfs.supabase.co';
       const SUPABASE_ANON_KEY = 'sb_publishable_-exfRTTm2rD080T-jwesIQ_YaOVKiJp';
 
-      // Cek jika variabel environment tidak diisi
       if(SUPABASE_URL === 'YOUR_SUPABASE_URL' || SUPABASE_ANON_KEY === 'YOUR_SUPABASE_ANON_KEY') {
         console.warn('Supabase URL/Key belum diatur. Silakan update di dalam <script>.');
-        // Tampilkan pesan di UI
         document.getElementById('postsContainer').innerHTML = `
           <div class="post card" style="border-color: var(--danger); background: rgba(239, 68, 68, 0.1);">
             <h3 style="color:var(--danger); margin:0">Koneksi Database Gagal</h3>
             <p style="color:var(--muted)">Konfigurasi Supabase (URL/Key) belum diatur di dalam file HTML.</p>
           </div>`;
+        return; // Hentikan eksekusi script jika key tidak ada
       }
 
       const { createClient } = supabase;
@@ -322,32 +306,27 @@
       
       // === Akhir Konfigurasi ===
 
-
       const CATEGORIES = ["Semua","Matematika","Sains","Bahasa","Sejarah","Lainnya"];
       const LS_THEME = 'forumbarbar_theme_v1';
 
-      // DOM
+      // DOM Elements
       const categoryListEl = document.getElementById('categoryList');
       const popularTagsEl = document.getElementById('popularTags');
       const postsContainer = document.getElementById('postsContainer');
       const postCountEl = document.getElementById('postCount');
       const composeForm = document.getElementById('composeForm');
-      const postTitle = document.getElementById('postTitle');
-      const postBody = document.getElementById('postBody');
-      const postCategory = document.getElementById('postCategory');
-      const postTags = document.getElementById('postTags');
       const submitPostBtn = document.getElementById('submitPost');
       const searchInput = document.getElementById('searchInput');
       const sortSelect = document.getElementById('sortSelect');
       const themeBtn = document.getElementById('themeBtn');
       const clearStorageBtn = document.getElementById('clearStorage');
 
-      // state
-      let posts = []; // Data sekarang diambil dari DB
+      // State
+      let posts = []; // Cache lokal untuk data dari DB
       let activeCategory = "Semua";
       let activeTag = null;
 
-      // init
+      // Inisialisasi Aplikasi
       initializeApp();
       
       async function initializeApp() {
@@ -355,9 +334,12 @@
         applySavedTheme();
         
         // Setup event listeners
-        submitPostBtn.addEventListener('click', handleSubmit);
-        searchInput.addEventListener('input', debounce(() => renderPosts(), 250)); // Cukup render ulang, tak perlu fetch
-        sortSelect.addEventListener('change', () => renderPosts()); // Cukup render ulang
+        composeForm.addEventListener('submit', handleSubmit);
+        searchInput.addEventListener('input', debounce(() => renderPosts(), 250));
+        
+        // PERBAIKAN: Mengubah sort select untuk mem-fetch ulang data dari database
+        sortSelect.addEventListener('change', fetchAndRenderPosts);
+
         themeBtn.addEventListener('click', toggleTheme);
         clearStorageBtn.addEventListener('click', () => {
           if(!confirm('Hapus data tema? (Data postingan ada di database)')) return;
@@ -365,18 +347,18 @@
           applySavedTheme();
         });
 
-        // Ambil data awal
+        // Ambil data awal dari database
         await fetchAndRenderPosts();
         
         // Coba buka hash setelah data dimuat
         tryOpenHash();
       }
 
-      // Perbaikan: Fungsi baru untuk mengambil data dari Supabase
       async function fetchAndRenderPosts() {
+        postsContainer.innerHTML = `<div class="post card muted">Memuat topik dari database...</div>`;
         const ascending = sortSelect.value === 'old';
         
-        // Ambil post DAN balasan terkait (replies) dalam satu query
+        // Ambil post DAN balasan terkait dalam satu query
         const { data, error } = await db
           .from('posts')
           .select('*, replies (*)')
@@ -388,12 +370,12 @@
           return;
         }
         
+        // Simpan ke cache lokal
         posts = data || [];
-        renderPosts(); // Panggil renderPosts setelah data di-fetch
-        renderPopularTags(); // Update tag populer
+        // Panggil fungsi render
+        renderPosts();
+        renderPopularTags();
       }
-
-      // Perbaikan: genId() tidak diperlukan lagi, Supabase akan generate UUID
       
       function normalizeTagText(text){
         return text.replace(/^[#]+/,'').toLowerCase().trim();
@@ -449,29 +431,24 @@
             activeTag = t;
             activeCategory = 'Semua';
             updateCategoryActiveStates();
-            renderPosts(); // Cukup render ulang
+            renderPosts();
           });
           popularTagsEl.appendChild(el);
         });
       }
 
-      // renderPosts sekarang HANYA me-render state 'posts' saat ini.
-      // Filtering tidak perlu fetch ulang dari DB.
       function renderPosts(){
         const q = (searchInput.value||'').toLowerCase().trim();
         let list = posts.slice();
 
-        // Filter category
         if(activeCategory && activeCategory !== 'Semua'){
           list = list.filter(p => p.category === activeCategory);
         }
 
-        // Filter tag
         if(activeTag){
           list = list.filter(p => p.tags.includes(activeTag));
         }
 
-        // Search
         if(q){
           list = list.filter(p =>
             p.title.toLowerCase().includes(q) ||
@@ -480,24 +457,9 @@
           );
         }
         
-        // Sorting sudah ditangani oleh fetchAndRenderPosts saat query.
-        // Tapi jika user mengubah sort, kita harus fetch ulang.
-        // Mari kita ubah: sortSelect.onChange harus fetch ulang.
-        
-        // --- Koreksi alur ---
-        // sortSelect.removeEventListener('change', () => renderPosts());
-        // sortSelect.addEventListener('change', fetchAndRenderPosts);
-        // ...
-        // Oke, untuk sekarang, kita biarkan sort client-side agar simpel
-        // dan sesuai dengan alur kode asli.
-        if (sortSelect.value === 'new') {
-           list.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
-        } else {
-           list.sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
-        }
-        // --- Akhir koreksi alur ---
+        // DIHAPUS: Blok sorting di client-side tidak diperlukan lagi
+        // karena data sudah diurutkan oleh query Supabase saat fetch.
 
-        // render
         postsContainer.innerHTML = '';
         if(!list.length){
           const empty = document.createElement('div');
@@ -509,15 +471,10 @@
         }
 
         postCountEl.textContent = `${list.length} topik`;
-        
-        // Jangan panggil renderPopularTags() di sini untuk menghindari loop
-        // renderPopularTags() dipanggil setelah fetch.
       }
       
-      // Fungsi untuk render balasan
       function renderReplies(post, container){
         container.innerHTML = '';
-        // 'post.replies' sudah otomatis terisi oleh query Supabase
         const replies = post.replies || [];
         if(!replies.length) return;
 
@@ -538,7 +495,7 @@
         const el = document.createElement('article');
         el.className = 'post card';
         el.setAttribute('data-id', p.id);
-        const date = new Date(p.created_at); // Menggunakan created_at dari DB
+        const date = new Date(p.created_at);
 
         el.innerHTML = `
           <div class="meta">
@@ -556,12 +513,11 @@
           </div>
 
           <form class="reply-form">
-            <textarea class="input" placeholder="Tulis balasan..." required aria-label="Tulis balasan untuk ${escapeHtml(p.title)}"></textarea>
+            <textarea name="replyBody" class="input" placeholder="Tulis balasan..." required aria-label="Tulis balasan untuk ${escapeHtml(p.title)}"></textarea>
             <button type="submit" class="btn" style="justify-self:flex-end">Kirim Balasan</button>
           </form>
         `;
         
-        // Render tags
         const tagsContainer = el.querySelector('.post-tags');
         (p.tags || []).forEach(t => {
           const tEl = document.createElement('div');
@@ -577,11 +533,9 @@
           tagsContainer.appendChild(tEl);
         });
 
-        // Render balasan yang sudah ada
         const repliesContainer = el.querySelector('.replies-section');
         renderReplies(p, repliesContainer);
 
-        // share button
         el.querySelector('.shareBtn').addEventListener('click', () => {
           const url = new URL(location.href);
           url.hash = p.id;
@@ -592,7 +546,6 @@
           });
         });
 
-        // Perbaikan: delete button (async)
         el.querySelector('.delBtn').addEventListener('click', async () => {
           if(!confirm('Hapus topik ini? Tindakan tidak bisa dibatalkan.')) return;
           
@@ -601,69 +554,52 @@
           if(error) {
             alert('Gagal menghapus post: ' + error.message);
           } else {
-            // Optimis: hapus dari UI lokal & state
-            // posts = posts.filter(x => x.id !== p.id);
-            // renderPosts();
-            
-            // Pesimis (lebih aman): fetch ulang
+            // Cara paling aman: fetch ulang dari database
             await fetchAndRenderPosts();
           }
         });
         
-        // Perbaikan: Event listener untuk form balasan (async)
         el.querySelector('.reply-form').addEventListener('submit', async (e) => {
           e.preventDefault();
-          const textarea = el.querySelector('.reply-form textarea');
-          const replyBody = textarea.value.trim();
-          if(!replyBody) {
-            alert('Balasan tidak boleh kosong.');
-            return;
-          }
+          const form = e.target;
+          const formData = new FormData(form);
+          const replyBody = formData.get('replyBody').trim();
           
-          const newReply = {
-            body: replyBody,
-            post_id: p.id // Foreign key ke post
-            // id dan created_at akan digenerate oleh Supabase
-          };
+          if(!replyBody) return alert('Balasan tidak boleh kosong.');
+          
+          const newReply = { body: replyBody, post_id: p.id };
           
           const { data, error } = await db.from('replies').insert(newReply).select().single();
 
           if (error) {
             alert('Gagal mengirim balasan: ' + error.message);
           } else {
-            // Sukses! Tambahkan balasan baru ke UI secara optimis
+            // Update UI secara optimis (tanpa fetch ulang semua data)
             p.replies = p.replies || [];
             p.replies.push(data);
             renderReplies(p, repliesContainer);
-            textarea.value = '';
+            form.reset();
           }
         });
 
         return el;
       }
 
-      // Perbaikan: handleSubmit (async)
-      async function handleSubmit(){
-        const title = postTitle.value.trim();
-        const body = postBody.value.trim();
-        const category = postCategory.value;
-        const tags = parseTags(postTags.value);
+      async function handleSubmit(event){
+        event.preventDefault();
+        const form = event.target;
+        const formData = new FormData(form);
+        const title = formData.get('title').trim();
+        const body = formData.get('body').trim();
+        const category = formData.get('category');
+        const tags = parseTags(formData.get('tags'));
 
-        if(!title || !body){
-          alert('Judul dan Isi topik tidak boleh kosong.');
-          return;
-        }
+        if(!title || !body) return alert('Judul dan Isi topik tidak boleh kosong.');
         
         submitPostBtn.disabled = true;
         submitPostBtn.textContent = 'Memposting...';
 
-        const newPost = {
-          title,
-          body,
-          category,
-          tags,
-          // id dan created_at akan digenerate oleh Supabase
-        };
+        const newPost = { title, body, category, tags };
         
         const { error } = await db.from('posts').insert(newPost);
 
@@ -673,16 +609,11 @@
         if(error) {
           alert('Gagal memposting: ' + error.message);
         } else {
-          // Sukses, reset form
-          postTitle.value = '';
-          postBody.value = '';
-          postTags.value = '';
-          postCategory.value = 'Matematika';
+          form.reset();
           
-          // reset filter dan fetch ulang data
           activeCategory = 'Semua';
           activeTag = null;
-          sortSelect.value = 'new'; // Tampilkan yang terbaru
+          sortSelect.value = 'new';
           updateCategoryActiveStates();
           await fetchAndRenderPosts();
           
@@ -690,7 +621,7 @@
         }
       }
 
-      // theme (tidak berubah)
+      // Helper & Theme Functions (tidak berubah)
       function applySavedTheme(){
         const saved = localStorage.getItem(LS_THEME);
         if(saved === 'dark'){
@@ -709,25 +640,17 @@
         if(isDark){
           document.documentElement.removeAttribute('data-theme');
           localStorage.setItem(LS_THEME, 'light');
-          themeBtn.textContent = 'Mode Gelap';
-          themeBtn.setAttribute('aria-pressed','false');
         } else {
           document.documentElement.setAttribute('data-theme','dark');
           localStorage.setItem(LS_THEME, 'dark');
-          themeBtn.textContent = 'Mode Terang';
-          themeBtn.setAttribute('aria-pressed','true');
         }
+        applySavedTheme();
       }
 
-      // helpers (tidak berubah)
       function escapeHtml(text){
         if(!text) return '';
-        return text
-          .replace(/&/g, "&amp;")
-          .replace(/</g, "&lt;")
-          .replace(/>/g, "&gt;")
-          .replace(/"/g, "&quot;")
-          .replace(/'/g, "&#39;");
+        const map = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' };
+        return text.replace(/[&<>"']/g, m => map[m]);
       }
 
       function formatDate(d){
@@ -735,7 +658,6 @@
         return new Intl.DateTimeFormat('id-ID', opts).format(d);
       }
 
-G
       function debounce(fn, wait){
         let t;
         return function(...a){
@@ -757,7 +679,6 @@ G
         }
       }
       
-      // expose small debug (optional)
       window.ForumBarBar = { posts, db, fetchAndRenderPosts };
 
     })();
