@@ -51,29 +51,79 @@
       transition: background 0.2s ease, color 0.2s ease;
     }
 
+    /* === PERUBAHAN LAYOUT UTAMA === */
+    .app-header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 16px;
+      background: var(--card);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      margin-bottom: 20px;
+      /* Pastikan header di atas backdrop tapi di bawah sidebar */
+      position: relative; 
+      z-index: 998; 
+    }
+
     .container{
       max-width:1100px;
       margin:0 auto;
       display:grid;
-      grid-template-columns: 320px 1fr;
+      /* HANYA 1 KOLOM SEKARANG */
+      grid-template-columns: 1fr; 
       gap:20px;
       align-items:start;
     }
+    /* ============================= */
 
-    /* Sidebar */
+
+    /* === CSS BARU: Sidebar (Off-Canvas) === */
     .sidebar{
-      position:sticky;
-      top:28px;
-      background:var(--card);
-      padding:18px;
-      border-radius:var(--radius);
+      position: fixed; /* Di atas segalanya */
+      top: 0;
+      left: 0;
+      height: 100vh; /* Penuh */
+      width: 320px; /* Lebar tetap */
+      max-width: 90%;
+      background: var(--card);
       box-shadow:var(--shadow);
+      padding:18px;
+      overflow-y: auto; /* Bisa scroll jika konten panjang */
+      
+      /* Sembunyikan di kiri */
+      transform: translateX(-100%); 
+      transition: transform 0.3s ease-in-out;
+      z-index: 1000; /* Paling atas */
     }
+    .sidebar.is-open {
+      transform: translateX(0); /* Tampilkan */
+    }
+    .sidebar-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.4);
+      opacity: 0;
+      pointer-events: none; /* Tidak bisa diklik saat tersembunyi */
+      transition: opacity 0.3s ease-in-out;
+      z-index: 999; /* Di bawah sidebar, di atas konten */
+    }
+    .sidebar-backdrop.is-open {
+      opacity: 1;
+      pointer-events: auto; /* Bisa diklik saat tampil */
+    }
+    .sidebar-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 12px;
+    }
+    /* ==================================== */
+
     .brand{
       display:flex;
       gap:12px;
       align-items:center;
-      margin-bottom:12px;
     }
     .logo{
       width:44px;height:44px;border-radius:10px;
@@ -86,28 +136,7 @@
     p.subtitle{margin:4px 0 12px;color:var(--muted);font-size:13px}
 
     .filter-group{margin-top:8px}
-    
-    /* --- CSS BARU UNTUK KATEGORI TOGGLE --- */
-    .filter-group-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
-    .filter-group-header h3{margin:8px 0;font-size:13px;color:var(--muted)}
-    
-    .category-wrapper {
-      overflow: hidden;
-      transition: max-height 0.3s ease-in-out;
-    }
-    .category-wrapper.collapsed {
-      max-height: 0;
-    }
-    .category-wrapper:not(.collapsed) {
-      max-height: 500px; /* Cukup besar untuk menampung kategori */
-      margin-top: 8px; /* Beri jarak saat terbuka */
-    }
-    /* -------------------------------------- */
-
+    .filter-group h3{margin:8px 0;font-size:13px;color:var(--muted)}
     .cat-list{display:flex;flex-direction:column;gap:8px}
     .cat-btn{
       text-align:left;padding:8px 10px;border-radius:8px;border:1px solid transparent;
@@ -130,21 +159,29 @@
     .btn:disabled{opacity: 0.7; cursor: wait;}
     .btn.ghost{background:transparent;border:1px solid var(--border);color:var(--text)}
 
-    /* --- CSS BARU UNTUK TOMBOL IKON --- */
+    /* === CSS BARU: Tombol Ikon === */
     .btn.icon-btn {
       padding: 8px;
-      width: 36px;
-      height: 36px;
+      width: 44px; /* Sesuaikan dgn logo */
+      height: 44px;
       display: grid;
       place-items: center;
       flex-shrink: 0;
     }
     .btn.icon-btn svg {
-      width: 20px;
-      height: 20px;
+      width: 24px;
+      height: 24px;
       stroke: currentColor;
     }
-    /* --------------------------------- */
+    .btn.icon-btn.close-btn {
+      font-size: 28px;
+      line-height: 1;
+      font-weight: 300;
+      width: 36px;
+      height: 36px;
+    }
+    /* ============================= */
+
 
     /* Main content */
     .main{
@@ -186,7 +223,7 @@
       flex-shrink: 0;
     }
 
-    /* posts */
+    /* posts (CSS tidak berubah) */
     .posts {display:grid;gap:12px}
     .post{
       padding:14px;border-radius:12px;border:1px solid var(--border);
@@ -201,7 +238,7 @@
     .post .post-tags .tag{cursor:pointer;padding:6px 8px;border-radius:999px;background:rgba(0,0,0,0.03);font-size:13px}
     .post .actions{display:flex;gap:8px;justify-content:flex-end;margin-top:12px;}
 
-    /* CSS untuk Balasan */
+    /* Balasan (CSS tidak berubah) */
     .replies-section{
       margin-top: 16px;
       padding-top: 12px;
@@ -230,59 +267,64 @@
     /* responsive */
     @media (max-width:920px){
       body{padding:14px}
-      .container{grid-template-columns: 1fr;}
-      .sidebar{position:relative;top:auto}
+      /* .container{grid-template-columns: 1fr;} */ /* Sudah diubah di atas */
+      /* .sidebar{position:relative;top:auto} */ /* Sudah diubah di atas */
       
       .row { flex-direction: column; }
       .searchbar { flex-direction: column; }
       .searchbar select { width: 100%; }
+      .app-header { padding: 12px; }
+      h1.title { font-size: 16px; }
     }
   </style>
 </head>
 <body>
+
+  <div id="sidebarBackdrop" class="sidebar-backdrop"></div>
+  
+  <aside class="sidebar" id="sidebarMenu" aria-label="Sidebar">
+    
+    <div class="sidebar-header">
+      <p class="subtitle" style="margin:0; font-weight: 600;">Menu Navigasi</p>
+      <button id="sidebarCloseBtn" class="btn ghost icon-btn close-btn" title="Tutup Menu" aria-label="Tutup Menu">&times;</button>
+    </div>
+
+    <div class="filter-group" aria-hidden="false">
+      <h3>Kategori</h3>
+      <div class="cat-list" id="categoryList"></div>
+    </div>
+
+    <div class="filter-group">
+      <h3>Tag populer</h3>
+      <div id="popularTags" class="tags-list" aria-live="polite"></div>
+    </div>
+
+    <div class="theme-toggle">
+      <div class="muted">Mode</div>
+      <div>
+        <button id="themeBtn" class="btn ghost" aria-pressed="false">Mode Gelap</button>
+      </div>
+    </div>
+    <div style="margin-top:12px">
+      <button id="clearStorage" class="btn ghost" title="Hapus data tema">Hapus data tema</button>
+    </div>
+  </aside>
+  <header class="app-header">
+    <button id="hamburgerBtn" class="btn ghost icon-btn" title="Buka Menu" aria-label="Buka Menu">
+      <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <line x1="3" y1="12" x2="21" y2="12"></line>
+        <line x1="3" y1="6" x2="21" y2="6"></line>
+        <line x1="3" y1="18" x2="21" y2="18"></line>
+      </svg>
+    </button>
+    <div class="brand">
+      <div class="logo">BB</div>
+      <div>
+        <h1 class="title">Forum BarBar</h1>
+      </div>
+    </div>
+  </header>
   <div class="container" id="app">
-    <aside class="sidebar card" aria-label="Sidebar">
-      <div class="brand">
-        <div class="logo">BB</div>
-        <div>
-          <h1 class="title">Forum BarBar</h1>
-          <p class="subtitle">Tempat diskusi siswa — tanya, jawab, belajar bareng.</p>
-        </div>
-      </div>
-
-      <div class="filter-group">
-        <div class="filter-group-header">
-          <h3>Kategori</h3>
-          <button id="categoryToggleBtn" class="btn ghost icon-btn" title="Toggle Kategori" aria-expanded="false">
-            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <line x1="3" y1="12" x2="21" y2="12"></line>
-              <line x1="3" y1="6" x2="21" y2="6"></line>
-              <line x1="3" y1="18" x2="21" y2="18"></line>
-            </svg>
-          </button>
-        </div>
-        
-        <div id="categoryWrapper" class="category-wrapper collapsed" aria-hidden="true">
-          <div class="cat-list" id="categoryList">
-            </div>
-        </div>
-      </div>
-      <div class="filter-group">
-        <h3>Tag populer</h3>
-        <div id="popularTags" class="tags-list" aria-live="polite"></div>
-      </div>
-
-      <div class="theme-toggle">
-        <div class="muted">Mode</div>
-        <div>
-          <button id="themeBtn" class="btn ghost" aria-pressed="false">Mode Gelap</button>
-        </div>
-      </div>
-      <div style="margin-top:12px">
-        <button id="clearStorage" class="btn ghost" title="Hapus data tema">Hapus data tema</button>
-      </div>
-    </aside>
-
     <main class="main">
       <section class="card compose" aria-labelledby="composeTitle">
         <h2 id="composeTitle">Buat Pertanyaan / Topik Baru</h2>
@@ -347,7 +389,7 @@
             <h3 style="color:var(--danger); margin:0">Koneksi Database Gagal</h3>
             <p style="color:var(--muted)">Konfigurasi Supabase (URL/Key) belum diatur di dalam file HTML.</p>
           </div>`;
-        return; // Hentikan eksekusi script jika key tidak ada
+        return; 
       }
 
       const { createClient } = supabase;
@@ -360,10 +402,6 @@
 
       // DOM Elements
       const categoryListEl = document.getElementById('categoryList');
-      // --- BARU ---
-      const categoryToggleBtn = document.getElementById('categoryToggleBtn');
-      const categoryWrapper = document.getElementById('categoryWrapper');
-      // ----------
       const popularTagsEl = document.getElementById('popularTags');
       const postsContainer = document.getElementById('postsContainer');
       const postCountEl = document.getElementById('postCount');
@@ -373,9 +411,16 @@
       const sortSelect = document.getElementById('sortSelect');
       const themeBtn = document.getElementById('themeBtn');
       const clearStorageBtn = document.getElementById('clearStorage');
+      
+      // === DOM BARU UNTUK SIDEBAR ===
+      const hamburgerBtn = document.getElementById('hamburgerBtn');
+      const sidebarMenu = document.getElementById('sidebarMenu');
+      const sidebarBackdrop = document.getElementById('sidebarBackdrop');
+      const sidebarCloseBtn = document.getElementById('sidebarCloseBtn');
+      // ==============================
 
       // State
-      let posts = []; // Cache lokal untuk data dari DB
+      let posts = []; 
       let activeCategory = "Semua";
       let activeTag = null;
 
@@ -389,9 +434,7 @@
         // Setup event listeners
         composeForm.addEventListener('submit', handleSubmit);
         searchInput.addEventListener('input', debounce(() => renderPosts(), 250));
-        
         sortSelect.addEventListener('change', fetchAndRenderPosts);
-
         themeBtn.addEventListener('click', toggleTheme);
         clearStorageBtn.addEventListener('click', () => {
           if(!confirm('Hapus data tema? (Data postingan ada di database)')) return;
@@ -399,13 +442,11 @@
           applySavedTheme();
         });
 
-        // --- BARU ---
-        // Tambahkan listener untuk tombol hamburger
-        categoryToggleBtn.addEventListener('click', toggleCategoryMenu);
-        // Atur state awal ARIA
-        categoryWrapper.setAttribute('aria-hidden', 'true');
-        categoryToggleBtn.setAttribute('aria-expanded', 'false');
-        // ----------
+        // === EVENT LISTENER BARU UNTUK SIDEBAR ===
+        hamburgerBtn.addEventListener('click', openSidebar);
+        sidebarCloseBtn.addEventListener('click', closeSidebar);
+        sidebarBackdrop.addEventListener('click', closeSidebar);
+        // ======================================
 
         // Ambil data awal dari database
         await fetchAndRenderPosts();
@@ -413,21 +454,22 @@
         // Coba buka hash setelah data dimuat
         tryOpenHash();
       }
-
-      // --- FUNGSI BARU ---
-      function toggleCategoryMenu() {
-        const isCollapsed = categoryWrapper.classList.toggle('collapsed');
-        // Update atribut ARIA untuk aksesibilitas
-        categoryWrapper.setAttribute('aria-hidden', isCollapsed);
-        categoryToggleBtn.setAttribute('aria-expanded', !isCollapsed);
+      
+      // === FUNGSI BARU UNTUK KONTROL SIDEBAR ===
+      function openSidebar() {
+        sidebarMenu.classList.add('is-open');
+        sidebarBackdrop.classList.add('is-open');
       }
-      // -----------------
+      function closeSidebar() {
+        sidebarMenu.classList.remove('is-open');
+        sidebarBackdrop.classList.remove('is-open');
+      }
+      // ========================================
 
       async function fetchAndRenderPosts() {
         postsContainer.innerHTML = `<div class="post card muted">Memuat topik dari database...</div>`;
         const ascending = sortSelect.value === 'old';
         
-        // Ambil post DAN balasan terkait dalam satu query
         const { data, error } = await db
           .from('posts')
           .select('*, replies (*)')
@@ -439,9 +481,7 @@
           return;
         }
         
-        // Simpan ke cache lokal
         posts = data || [];
-        // Panggil fungsi render
         renderPosts();
         renderPopularTags();
       }
@@ -466,7 +506,8 @@
             activeCategory = cat;
             activeTag = null;
             updateCategoryActiveStates();
-            renderPosts(); // Cukup render ulang, tak perlu fetch
+            renderPosts(); 
+            closeSidebar(); // <-- TAMBAHAN: Tutup sidebar setelah memilih
           });
           categoryListEl.appendChild(btn);
         });
@@ -501,6 +542,7 @@
             activeCategory = 'Semua';
             updateCategoryActiveStates();
             renderPosts();
+            closeSidebar(); // <-- TAMBAHAN: Tutup sidebar setelah memilih
           });
           popularTagsEl.appendChild(el);
         });
@@ -595,6 +637,7 @@
             updateCategoryActiveStates();
             renderPosts();
             window.scrollTo({top:0, behavior:'smooth'});
+            // Tidak perlu close sidebar di sini, karena ini di main content
           });
           tagsContainer.appendChild(tEl);
         });
@@ -620,7 +663,6 @@
           if(error) {
             alert('Gagal menghapus post: ' + error.message);
           } else {
-            // Cara paling aman: fetch ulang dari database
             await fetchAndRenderPosts();
           }
         });
@@ -640,7 +682,6 @@
           if (error) {
             alert('Gagal mengirim balasan: ' + error.message);
           } else {
-            // Update UI secara optimis (tanpa fetch ulang semua data)
             p.replies = p.replies || [];
             p.replies.push(data);
             renderReplies(p, repliesContainer);
@@ -676,13 +717,11 @@
           alert('Gagal memposting: ' + error.message);
         } else {
           form.reset();
-          
           activeCategory = 'Semua';
           activeTag = null;
           sortSelect.value = 'new';
           updateCategoryActiveStates();
           await fetchAndRenderPosts();
-          
           window.scrollTo({top:0, behavior:'smooth'});
         }
       }
