@@ -51,8 +51,34 @@
       transition: background 0.2s ease, color 0.2s ease;
     }
 
-    .app-header {
+    /* === [BARU] CSS untuk Landing Screen === */
+    #landingScreen {
+      position: fixed;
+      inset: 0; /* shorthand untuk top, right, bottom, left = 0 */
+      background: var(--bg);
+      z-index: 9999;
+      display: grid;
+      place-items: center;
+      text-align: center;
+      transition: opacity 0.4s ease-out;
+    }
+    .landing-content {
       display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 16px;
+    }
+    .landing-content h1 { margin: 0; font-size: 28px; }
+    .landing-content p { margin: 0; color: var(--muted); max-width: 300px; }
+
+    /* === [BARU] Sembunyikan Konten Utama Awalnya === */
+    .app-header, .container {
+      display: none;
+    }
+    /* === Akhir Penambahan CSS === */
+
+    .app-header {
+      /* display: flex; (dipindah ke atas) */
       align-items: center;
       gap: 12px;
       padding: 16px;
@@ -67,7 +93,7 @@
     .container{
       max-width:1100px;
       margin:0 auto;
-      display:grid;
+      /* display:grid; (dipindah ke atas) */
       grid-template-columns: 1fr; 
       gap:20px;
       align-items:start;
@@ -262,6 +288,14 @@
 </head>
 <body>
 
+  <div id="landingScreen">
+    <div class="landing-content">
+      <div class="logo" style="width: 64px; height: 64px; font-size: 28px;">BB</div>
+      <h1>Selamat Datang!</h1>
+      <p>Platform diskusi Forum BarBar untuk belajar bareng teman-teman se-Nusantara.</p>
+      <button id="enterBtn" class="btn">Masuk ke Forum</button>
+    </div>
+  </div>
   <div id="sidebarBackdrop" class="sidebar-backdrop"></div>
   
   <aside class="sidebar" id="sidebarMenu" aria-label="Sidebar">
@@ -288,7 +322,7 @@
       </div>
     </div>
     
-    </aside>
+  </aside>
 
   <header class="app-header">
     <button id="hamburgerBtn" class="btn ghost icon-btn" title="Buka Menu" aria-label="Buka Menu">
@@ -383,6 +417,13 @@
       const LS_THEME = 'forumbarbar_theme_v1';
 
       // DOM Elements
+      // === [BARU] Tambah elemen untuk landing & konten utama ===
+      const landingScreen = document.getElementById('landingScreen');
+      const enterBtn = document.getElementById('enterBtn');
+      const appHeader = document.querySelector('.app-header');
+      const appContainer = document.querySelector('.container');
+      // === Akhir penambahan elemen ===
+
       const categoryListEl = document.getElementById('categoryList');
       const popularTagsEl = document.getElementById('popularTags');
       const postsContainer = document.getElementById('postsContainer');
@@ -392,8 +433,6 @@
       const searchInput = document.getElementById('searchInput');
       const sortSelect = document.getElementById('sortSelect');
       const themeBtn = document.getElementById('themeBtn');
-      // --- DIHAPUS ---
-      // const clearStorageBtn = document.getElementById('clearStorage'); 
       
       const hamburgerBtn = document.getElementById('hamburgerBtn');
       const sidebarMenu = document.getElementById('sidebarMenu');
@@ -409,6 +448,20 @@
       initializeApp();
       
       async function initializeApp() {
+        // === [BARU] Logika untuk tombol masuk ===
+        enterBtn.addEventListener('click', () => {
+          // 1. Buat landing screen menghilang (fade out)
+          landingScreen.style.opacity = '0';
+          
+          // 2. Setelah animasi selesai, sembunyikan total dan tampilkan konten utama
+          setTimeout(() => {
+            landingScreen.style.display = 'none';
+            appHeader.style.display = 'flex'; // Kembalikan display aslinya
+            appContainer.style.display = 'grid'; // Kembalikan display aslinya
+          }, 400); // 400ms = durasi transisi di CSS
+        });
+        // === Akhir logika baru ===
+
         renderCategoryButtons();
         applySavedTheme();
         
@@ -418,9 +471,6 @@
         sortSelect.addEventListener('change', fetchAndRenderPosts);
         themeBtn.addEventListener('click', toggleTheme);
         
-        // --- DIHAPUS ---
-        // clearStorageBtn.addEventListener('click', () => { ... });
-
         hamburgerBtn.addEventListener('click', openSidebar);
         sidebarCloseBtn.addEventListener('click', closeSidebar);
         sidebarBackdrop.addEventListener('click', closeSidebar);
@@ -578,7 +628,6 @@
         el.setAttribute('data-id', p.id);
         const date = new Date(p.created_at);
 
-        // === TEMPLATE HTML DIPERBARUI ===
         el.innerHTML = `
           <div class="meta">
             <div class="cat" aria-hidden="true">${escapeHtml(p.category)}</div>
@@ -598,7 +647,6 @@
             <button type="submit" class="btn" style="justify-self:flex-end">Kirim Balasan</button>
           </form>
         `;
-        // === AKHIR TEMPLATE ===
         
         const tagsContainer = el.querySelector('.post-tags');
         (p.tags || []).forEach(t => {
@@ -627,9 +675,6 @@
             prompt('Salin link ini:', url.toString());
           });
         });
-
-        // --- DIHAPUS ---
-        // el.querySelector('.delBtn').addEventListener('click', async () => { ... });
         
         el.querySelector('.reply-form').addEventListener('submit', async (e) => {
           e.preventDefault();
