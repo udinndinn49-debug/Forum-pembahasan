@@ -86,7 +86,28 @@
     p.subtitle{margin:4px 0 12px;color:var(--muted);font-size:13px}
 
     .filter-group{margin-top:8px}
-    .filter-group h3{margin:8px 0;font-size:13px;color:var(--muted)}
+    
+    /* --- CSS BARU UNTUK KATEGORI TOGGLE --- */
+    .filter-group-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .filter-group-header h3{margin:8px 0;font-size:13px;color:var(--muted)}
+    
+    .category-wrapper {
+      overflow: hidden;
+      transition: max-height 0.3s ease-in-out;
+    }
+    .category-wrapper.collapsed {
+      max-height: 0;
+    }
+    .category-wrapper:not(.collapsed) {
+      max-height: 500px; /* Cukup besar untuk menampung kategori */
+      margin-top: 8px; /* Beri jarak saat terbuka */
+    }
+    /* -------------------------------------- */
+
     .cat-list{display:flex;flex-direction:column;gap:8px}
     .cat-btn{
       text-align:left;padding:8px 10px;border-radius:8px;border:1px solid transparent;
@@ -108,6 +129,22 @@
     }
     .btn:disabled{opacity: 0.7; cursor: wait;}
     .btn.ghost{background:transparent;border:1px solid var(--border);color:var(--text)}
+
+    /* --- CSS BARU UNTUK TOMBOL IKON --- */
+    .btn.icon-btn {
+      padding: 8px;
+      width: 36px;
+      height: 36px;
+      display: grid;
+      place-items: center;
+      flex-shrink: 0;
+    }
+    .btn.icon-btn svg {
+      width: 20px;
+      height: 20px;
+      stroke: currentColor;
+    }
+    /* --------------------------------- */
 
     /* Main content */
     .main{
@@ -213,11 +250,23 @@
         </div>
       </div>
 
-      <div class="filter-group" aria-hidden="false">
-        <h3>Kategori</h3>
-        <div class="cat-list" id="categoryList"></div>
+      <div class="filter-group">
+        <div class="filter-group-header">
+          <h3>Kategori</h3>
+          <button id="categoryToggleBtn" class="btn ghost icon-btn" title="Toggle Kategori" aria-expanded="false">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="3" y1="12" x2="21" y2="12"></line>
+              <line x1="3" y1="6" x2="21" y2="6"></line>
+              <line x1="3" y1="18" x2="21" y2="18"></line>
+            </svg>
+          </button>
+        </div>
+        
+        <div id="categoryWrapper" class="category-wrapper collapsed" aria-hidden="true">
+          <div class="cat-list" id="categoryList">
+            </div>
+        </div>
       </div>
-
       <div class="filter-group">
         <h3>Tag populer</h3>
         <div id="popularTags" class="tags-list" aria-live="polite"></div>
@@ -311,6 +360,10 @@
 
       // DOM Elements
       const categoryListEl = document.getElementById('categoryList');
+      // --- BARU ---
+      const categoryToggleBtn = document.getElementById('categoryToggleBtn');
+      const categoryWrapper = document.getElementById('categoryWrapper');
+      // ----------
       const popularTagsEl = document.getElementById('popularTags');
       const postsContainer = document.getElementById('postsContainer');
       const postCountEl = document.getElementById('postCount');
@@ -337,7 +390,6 @@
         composeForm.addEventListener('submit', handleSubmit);
         searchInput.addEventListener('input', debounce(() => renderPosts(), 250));
         
-        // PERBAIKAN: Mengubah sort select untuk mem-fetch ulang data dari database
         sortSelect.addEventListener('change', fetchAndRenderPosts);
 
         themeBtn.addEventListener('click', toggleTheme);
@@ -347,12 +399,29 @@
           applySavedTheme();
         });
 
+        // --- BARU ---
+        // Tambahkan listener untuk tombol hamburger
+        categoryToggleBtn.addEventListener('click', toggleCategoryMenu);
+        // Atur state awal ARIA
+        categoryWrapper.setAttribute('aria-hidden', 'true');
+        categoryToggleBtn.setAttribute('aria-expanded', 'false');
+        // ----------
+
         // Ambil data awal dari database
         await fetchAndRenderPosts();
         
         // Coba buka hash setelah data dimuat
         tryOpenHash();
       }
+
+      // --- FUNGSI BARU ---
+      function toggleCategoryMenu() {
+        const isCollapsed = categoryWrapper.classList.toggle('collapsed');
+        // Update atribut ARIA untuk aksesibilitas
+        categoryWrapper.setAttribute('aria-hidden', isCollapsed);
+        categoryToggleBtn.setAttribute('aria-expanded', !isCollapsed);
+      }
+      // -----------------
 
       async function fetchAndRenderPosts() {
         postsContainer.innerHTML = `<div class="post card muted">Memuat topik dari database...</div>`;
@@ -457,9 +526,6 @@
           );
         }
         
-        // DIHAPUS: Blok sorting di client-side tidak diperlukan lagi
-        // karena data sudah diurutkan oleh query Supabase saat fetch.
-
         postsContainer.innerHTML = '';
         if(!list.length){
           const empty = document.createElement('div');
